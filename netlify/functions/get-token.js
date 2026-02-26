@@ -1,35 +1,39 @@
 exports.handler = async function () {
   try {
-    const params = new URLSearchParams();
-    params.append("grant_type", "client_credentials");
-    params.append("scope", "roles");
-    params.append("client_id", process.env.VIDA_CLIENT_ID);
-    params.append("client_secret", process.env.VIDA_CLIENT_SECRET);
-
-    const response = await fetch(
-      "https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params,
-      }
-    );
+    const response = await fetch("https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: process.env.VIDA_CLIENT_ID,
+        client_secret: process.env.VIDA_CLIENT_SECRET,
+        scope: "roles"
+      })
+    });
 
     const data = await response.json();
 
+    if (!data.access_token) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Failed to obtain token", details: data })
+      };
+    }
+
     return {
-      statusCode: response.status,
-      body: JSON.stringify(data),
+      statusCode: 200,
+      body: JSON.stringify({
+        access_token: data.access_token,
+        signing_key: process.env.VIDA_SIGNING_KEY
+      })
     };
 
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: error.message,
-      }),
+      body: JSON.stringify({ error: error.message })
     };
   }
 };
