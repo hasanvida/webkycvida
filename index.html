@@ -1,128 +1,245 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VIDA Identity Verification Demo</title>
+  <title>VIDA eKYC Demo</title>
 
-  <!-- ✅ CORRECT VIDA WEB SDK (Sandbox) -->
+  <!-- VIDA Web SDK (Sandbox) -->
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
       padding: 40px;
-      background: #f4f6f9;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f3f5f9;
+      color: #1f2937;
     }
+
+    .layout {
+      max-width: 1200px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
     button {
-      padding: 10px 18px;
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .btn-primary {
       background: #0d6efd;
       color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
     }
+
+    .btn-secondary {
+      background: #111827;
+      color: #fff;
+    }
+
     #sdk-container {
-      margin-top: 20px;
+      min-height: 420px;
     }
-    #log-box {
+
+    .result-box {
       margin-top: 20px;
-      background: #111;
-      color: #0f0;
-      padding: 12px;
-      height: 220px;
-      overflow: auto;
+      background: #0b1220;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
       font-size: 12px;
       white-space: pre-wrap;
-      border-radius: 6px;
+      max-height: 260px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .result-title {
+      margin-top: 24px;
+      font-weight: 600;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-<h2>VIDA Identity Verification (Sandbox)</h2>
+<div class="layout">
 
-<button id="startBtn">Start Verification</button>
+  <!-- LEFT PANEL -->
+  <div class="card">
+    <h1>VIDA eKYC Demo</h1>
 
-<div id="sdk-container"></div>
-<div id="log-box"></div>
+    <h2>Verification Options</h2>
+
+    <button class="btn-primary" onclick="startDocumentOnly()">
+      Document Verification Only
+    </button>
+
+    <button class="btn-secondary" onclick="startFullVerification()">
+      Full Verification
+    </button>
+
+    <p style="font-size:12px;color:#6b7280;margin-top:12px;">
+      Document-only flow excludes liveness and face match.
+    </p>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="card">
+    <h2>Verification Session</h2>
+
+    <div id="sdk-container"></div>
+
+    <div class="result-title">Result</div>
+    <div id="result-box" class="result-box"></div>
+  </div>
+
+</div>
 
 <script>
-  function log(msg) {
-    console.log(msg);
-    const box = document.getElementById("log-box");
-    box.innerHTML += msg + "\n";
-    box.scrollTop = box.scrollHeight;
+  function clearUI() {
+    document.getElementById("sdk-container").innerHTML = "";
+    document.getElementById("result-box").style.display = "none";
+    document.getElementById("result-box").innerHTML = "";
   }
 
-  window.onload = function () {
-    log("Page loaded");
-    log("VidaSDK exists: " + !!window.VidaSDK);
-  };
+  function showResult(data) {
+    const box = document.getElementById("result-box");
+    box.style.display = "block";
+    box.textContent = JSON.stringify(data, null, 2);
+  }
 
-  document.getElementById("startBtn").addEventListener("click", async function () {
+  async function fetchToken() {
+    const res = await fetch("/.netlify/functions/get-token");
+    const data = await res.json();
+    if (!data.access_token) {
+      throw new Error("Token generation failed");
+    }
+    return data;
+  }
+
+  /* =========================
+     DOCUMENT VERIFICATION ONLY
+     ========================= */
+  async function startDocumentOnly() {
     try {
-      log("=================================");
-      log("Start button clicked");
+      clearUI();
+      const data = await fetchToken();
 
-      // 1️⃣ Get fresh token
-      log("Calling /.netlify/functions/get-token");
-      const res = await fetch("/.netlify/functions/get-token");
-      const tokenData = await res.json();
-
-      log("Token received");
-      log("Token length: " + tokenData.access_token.length);
-
-      // 2️⃣ Clear container
-      document.getElementById("sdk-container").innerHTML = "";
-
-      // 3️⃣ Init VIDA SDK (CORRECT WAY)
-      log("Initializing VIDA SDK...");
-
-      window.VidaSDK.init({
-        token: tokenData.access_token,        // ✅ correct key
-        signingKey: tokenData.signing_key,    // ✅ required
+      VidaSDK.init({
+        token: data.access_token,
+        signingKey: data.signing_key,
         elementId: "sdk-container",
         workflow: "identity-verification",
         countryCode: "IDN",
         locale: "EN",
-        partnerTransactionId: crypto.randomUUID(),
 
         workflowConfigs: {
           identityVerification: {
             skipFaceMatch: true,
+
             userConsent: {
               obtained: true,
               obtainedAt: Date.now(),
             },
+
             docVerification: {
-              skipDocBackSideCapture: true, // ✅ as requested
-              maxRetryAttempts: 3,
-            },
-            faceMatch: {
+              skipDocBackSideCapture: true,
               maxRetryAttempts: 3,
             }
           }
         },
 
-        onComplete: (data) => {
-          log("✅ VERIFICATION COMPLETED");
-          log(JSON.stringify(data, null, 2));
+        onComplete: (result) => {
+          showResult(result);
         },
 
         onError: (error) => {
-          log("❌ VERIFICATION ERROR");
-          log(JSON.stringify(error, null, 2));
+          showResult(error);
         }
       });
 
-      log("VidaSDK.init() called");
-
-    } catch (err) {
-      log("❌ FATAL ERROR");
-      log(err.message || err);
+    } catch (e) {
+      showResult({ error: e.message });
     }
-  });
+  }
+
+  /* =========================
+     FULL VERIFICATION
+     ========================= */
+  async function startFullVerification() {
+    try {
+      clearUI();
+      const data = await fetchToken();
+
+      VidaSDK.init({
+        token: data.access_token,
+        signingKey: data.signing_key,
+        elementId: "sdk-container",
+        workflow: "identity-verification",
+        countryCode: "IDN",
+        locale: "EN",
+
+        workflowConfigs: {
+          identityVerification: {
+            userConsent: {
+              obtained: true,
+              obtainedAt: Date.now(),
+            },
+
+            docVerification: {
+              skipDocBackSideCapture: true,
+              maxRetryAttempts: 3,
+            },
+
+            faceMatch: {
+              maxRetryAttempts: 3,
+              detectionTimeOut: 90000,
+            }
+          }
+        },
+
+        onComplete: (result) => {
+          showResult(result);
+        },
+
+        onError: (error) => {
+          showResult(error);
+        }
+      });
+
+    } catch (e) {
+      showResult({ error: e.message });
+    }
+  }
 </script>
 
 </body>
