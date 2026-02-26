@@ -1,126 +1,128 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Vida Web SDK Demo</title>
+  <title>Vida Web SDK Debug Demo</title>
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 40px;
-      background: #f4f6f9;
-    }
-    h2 {
-      margin-bottom: 20px;
-    }
+    body { font-family: Arial; padding: 40px; background: #f4f6f9; }
     button {
-      padding: 12px 20px;
+      padding: 10px 18px;
       margin-right: 10px;
       margin-bottom: 10px;
-      background-color: #0d6efd;
+      background: #0d6efd;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #084298;
-    }
-    #sdk-container {
-      margin-top: 30px;
-    }
-    #result-box {
+    #sdk-container { margin-top: 20px; }
+    #log-box {
       margin-top: 20px;
+      background: #111;
+      color: #0f0;
       padding: 15px;
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      white-space: pre-wrap;
-      font-size: 13px;
+      border-radius: 6px;
+      font-size: 12px;
+      height: 200px;
+      overflow: auto;
     }
   </style>
 </head>
 
 <body>
 
-<h2>Vida Web SDK Demo (Sandbox)</h2>
+<h2>Vida Web SDK Debug (Sandbox)</h2>
 
-<button onclick="startDocVerification()">Document Verification</button>
-<button onclick="startLiveness()">Liveness Only</button>
-<button onclick="startFullIdentity()">Full Identity (Doc + Face Match)</button>
+<button onclick="startDoc()">Document Verification</button>
+<button onclick="startLiveness()">Liveness</button>
+<button onclick="startFull()">Full Identity</button>
 
 <div id="sdk-container"></div>
-<div id="result-box"></div>
+<div id="log-box"></div>
 
 <script>
-async function getToken() {
-  const response = await fetch("/.netlify/functions/get-token");
-  return await response.json();
+
+function log(message) {
+  console.log(message);
+  const logBox = document.getElementById("log-box");
+  logBox.innerHTML += message + "\n";
 }
 
-async function initSDK(workflowType) {
-  document.getElementById("sdk-container").innerHTML = "";
-  document.getElementById("result-box").innerHTML = "";
+async function getToken() {
+  log("Fetching token from backend...");
+  const response = await fetch("/.netlify/functions/get-token");
 
-  const data = await getToken();
+  if (!response.ok) {
+    throw new Error("Token API failed: " + response.status);
+  }
 
-  window.VidaSDK.init({
-    token: data.token,
-    signingKey: data.signingKey,
-    elementId: "sdk-container",
-    workflow: workflowType,
-    countryCode: "IDN",
-    locale: "EN",
-    partnerTransactionId: crypto.randomUUID(),
+  const data = await response.json();
+  log("Token received");
+  return data;
+}
 
-    workflowConfigs: {
-      identityVerification: {
-        userConsent: {
-          obtained: true,
-          obtainedAt: Date.now(),
-        },
-        docVerification: {
-          maxRetryAttempts: 3,
-        },
-        faceMatch: {
-          maxRetryAttempts: 3,
+async function initWorkflow(type) {
+  try {
+    log("Starting workflow: " + type);
+
+    document.getElementById("sdk-container").innerHTML = "";
+
+    if (!window.VidaSDK) {
+      log("ERROR: VidaSDK not loaded!");
+      return;
+    }
+
+    const data = await getToken();
+
+    log("Initializing SDK...");
+
+    window.VidaSDK.init({
+      token: data.token,
+      signingKey: data.signingKey,
+      elementId: "sdk-container",
+      workflow: type,
+      countryCode: "IDN",
+      locale: "EN",
+      partnerTransactionId: crypto.randomUUID(),
+
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: {
+            obtained: true,
+            obtainedAt: Date.now(),
+          },
         }
       },
-      liveness: {
-        maxRetryAttempts: 3
-      }
-    },
 
-    themeConfigs: {
-      primaryButtonBgColor: "#0d6efd",
-      primaryButtonTextColor: "#ffffff",
-      titleTextColor: "#333333",
-    },
+      onComplete: (result) => {
+        log("Workflow Completed");
+        log(JSON.stringify(result));
+      },
 
-    onComplete: (data) => {
-      document.getElementById("result-box").innerHTML =
-        JSON.stringify(data, null, 2);
-    },
+      onError: (error) => {
+        log("Workflow Error:");
+        log(JSON.stringify(error));
+      },
+    });
 
-    onError: (error) => {
-      document.getElementById("result-box").innerHTML =
-        JSON.stringify(error, null, 2);
-    },
-  });
+  } catch (err) {
+    log("Exception:");
+    log(err.message);
+  }
 }
 
-/* BUTTON ACTIONS */
-
-function startDocVerification() {
-  initSDK("document-verification");
+function startDoc() {
+  initWorkflow("document-verification");
 }
 
 function startLiveness() {
-  initSDK("liveness");
+  initWorkflow("liveness");
 }
 
-function startFullIdentity() {
-  initSDK("identity-verification");
+function startFull() {
+  initWorkflow("identity-verification");
 }
+
 </script>
 
 </body>
