@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vida Web SDK Demo</title>
+  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
+</head>
+<body>
+  <h2>Vida Identity Verification Demo</h2>
+
+  <button onclick="startVerification()">Start Verification</button>
+
+  <div id="sdk-container" style="margin-top:20px;"></div>
+
+  <script>
+    async function startVerification() {
+      try {
+        // Call backend to get token + signing key
+        const response = await fetch("/.netlify/functions/get-token");
+        const data = await response.json();
+
+        window.VidaSDK.init({
+          token: data.token,
+          signingKey: data.signingKey,
+          elementId: "sdk-container",
+          workflow: "identity-verification",
+          countryCode: "IDN",
+          locale: "EN",
+          partnerTransactionId: crypto.randomUUID(),
+          workflowConfigs: {
+            identityVerification: {
+              userConsent: {
+                obtained: true,
+                obtainedAt: Date.now(),
+              },
+              docVerification: {
+                maxRetryAttempts: 3,
+              },
+              faceMatch: {
+                maxRetryAttempts: 3,
+              }
+            }
+          },
+          onComplete: (data) => {
+            console.log("Verification completed:", data);
+            alert("Verification Completed!");
+          },
+          onError: (error) => {
+            console.error("Error:", error);
+            alert("Error occurred");
+          },
+        });
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to start verification");
+      }
+    }
+  </script>
+</body>
+</html>
