@@ -2,84 +2,67 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Vida Web SDK Test</title>
+  <title>Vida Debug Mode</title>
   <script src="https://unpkg.com/vida-web-sdk/dist/vida-web-sdk.umd.js"></script>
 </head>
 <body>
 
-  <h2>Vida Identity Verification Test</h2>
+<h2>Vida SDK Debug</h2>
+<button onclick="startVerification()">Start</button>
 
-  <button onclick="startVerification()">Start Identity Verification</button>
+<div id="sdk-container"></div>
 
-  <br /><br />
+<script>
+async function startVerification() {
+  console.clear();
+  console.log("STEP 1: Button clicked");
 
-  <!-- SDK Container (WAJIB ADA & HARUS SAMA DENGAN elementId) -->
-  <div id="sdk-container"></div>
+  try {
+    console.log("STEP 2: Fetching token...");
 
-  <script>
-    async function startVerification() {
-      console.log("Fetching token from backend...");
+    const res = await fetch('/.netlify/functions/get-token');
+    console.log("STEP 3: Backend response status:", res.status);
 
-      try {
-        const res = await fetch('/.netlify/functions/get-token');
-        const data = await res.json();
+    const data = await res.json();
+    console.log("STEP 4: Backend JSON:", data);
 
-        console.log("Token received:", data);
-
-        if (!data.access_token || !data.signing_key) {
-          alert("Token or Signing Key missing!");
-          return;
-        }
-
-        console.log("Initializing SDK...");
-
-        window.VidaSDK.init({
-          token: data.access_token,              // ⚠️ WAJIB token (bukan accessToken)
-          signingKey: data.signing_key,          // ⚠️ WAJIB ada
-          elementId: "sdk-container",            // ⚠️ HARUS sama dengan div id
-          workflow: "identity-verification",     // ⚠️ MANDATORY
-          countryCode: "IDN",                    // ⚠️ WAJIB isi
-          locale: "EN",
-          partnerTransactionId: crypto.randomUUID(),
-
-          workflowConfigs: {
-            identityVerification: {
-              userConsent: {
-                obtained: true,
-                obtainedAt: Date.now(),
-              },
-              docVerification: {
-                skipDocBackSideCapture: false,
-                skipIntroductionScreen: false,
-                skipDocSelectionScreen: false,
-                skipTutorialScreen: false,
-                maxRetryAttempts: 3,
-                captureTimeOut: 120000,
-              },
-              faceMatch: {
-                skipTutorialScreen: false,
-                maxRetryAttempts: 3,
-                detectionTimeOut: 120000,
-              }
-            }
-          },
-
-          onComplete: (data) => {
-            console.log("Verification completed:", data);
-            alert("Verification Completed!");
-          },
-
-          onError: (error) => {
-            console.error("Verification error:", error);
-            alert("Error occurred. Check console.");
-          }
-        });
-
-      } catch (err) {
-        console.error("Failed to start:", err);
-      }
+    if (!data.access_token) {
+      console.error("❌ access_token missing");
+      return;
     }
-  </script>
+
+    if (!data.signing_key) {
+      console.error("❌ signing_key missing");
+      return;
+    }
+
+    console.log("STEP 5: Initializing VidaSDK...");
+
+    window.VidaSDK.init({
+      token: data.access_token,
+      signingKey: data.signing_key,
+      elementId: "sdk-container",
+      workflow: "identity-verification",
+      countryCode: "IDN",
+      locale: "EN",
+      partnerTransactionId: crypto.randomUUID(),
+
+      onComplete: (result) => {
+        console.log("✅ SDK COMPLETED:", result);
+      },
+
+      onError: (error) => {
+        console.error("❌ SDK ERROR:", error);
+      }
+    });
+
+    console.log("STEP 6: VidaSDK.init() executed");
+
+  } catch (err) {
+    console.error("❌ FATAL ERROR:", err);
+  }
+}
+</script>
 
 </body>
 </html>
