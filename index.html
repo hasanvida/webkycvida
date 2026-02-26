@@ -70,14 +70,14 @@
       color: #fff;
     }
 
-    /* Result UI */
+    /* Result status */
     .result-status {
-      margin-top: 12px;
       padding: 20px;
       border-radius: 12px;
       font-size: 22px;
       font-weight: 800;
       text-align: center;
+      margin-bottom: 16px;
     }
 
     .result-pass {
@@ -90,17 +90,41 @@
       color: #991b1b;
     }
 
+    /* Transaction details */
     .transaction-details {
-      margin-top: 16px;
       padding: 16px;
       border-radius: 10px;
       background: #f9fafb;
       border: 1px solid #e5e7eb;
       font-size: 14px;
+      margin-bottom: 16px;
     }
 
     .transaction-item {
       margin-bottom: 8px;
+    }
+
+    /* Dropdown (API response) */
+    details {
+      border-radius: 10px;
+      background: #0b1220;
+      padding: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    pre {
+      margin-top: 10px;
+      background: #0b1220;
+      color: #e5e7eb;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -129,12 +153,18 @@
     <h2>Result</h2>
 
     <div id="result-status"></div>
+
     <div id="transaction-details" style="display:none;"></div>
+
+    <details id="api-response" style="display:none;">
+      <summary>View Full API Response</summary>
+      <pre id="api-response-json"></pre>
+    </details>
   </div>
 
 </div>
 
-<!-- Hidden VIDA SDK container (required but not visible) -->
+<!-- Hidden VIDA SDK container (required) -->
 <div
   id="sdk-container"
   style="
@@ -153,6 +183,8 @@
     document.getElementById("result-status").textContent = "";
     document.getElementById("transaction-details").style.display = "none";
     document.getElementById("transaction-details").innerHTML = "";
+    document.getElementById("api-response").style.display = "none";
+    document.getElementById("api-response-json").textContent = "";
   }
 
   async function fetchToken() {
@@ -167,6 +199,8 @@
   function showPassResult(data) {
     const statusBox = document.getElementById("result-status");
     const detailsBox = document.getElementById("transaction-details");
+    const apiBox = document.getElementById("api-response");
+    const apiJson = document.getElementById("api-response-json");
 
     statusBox.className = "result-status result-pass";
     statusBox.textContent = "PASSED";
@@ -177,13 +211,17 @@
       <div class="transaction-item"><strong>Workflow:</strong> identity-verification</div>
       <div class="transaction-item"><strong>Country:</strong> IDN</div>
       <div class="transaction-item"><strong>Completed At:</strong> ${new Date().toLocaleString()}</div>
-      <div class="transaction-item"><strong>Status:</strong> COMPLETED</div>
     `;
+
+    apiJson.textContent = JSON.stringify(data, null, 2);
+    apiBox.style.display = "block";
   }
 
   function showFailResult(error) {
     const statusBox = document.getElementById("result-status");
     const detailsBox = document.getElementById("transaction-details");
+    const apiBox = document.getElementById("api-response");
+    const apiJson = document.getElementById("api-response-json");
 
     statusBox.className = "result-status result-fail";
     statusBox.textContent = "NOT PASSED";
@@ -193,6 +231,9 @@
       <div class="transaction-item"><strong>Completed At:</strong> ${new Date().toLocaleString()}</div>
       <div class="transaction-item"><strong>Reason:</strong> ${error?.message || "Verification failed"}</div>
     `;
+
+    apiJson.textContent = JSON.stringify(error, null, 2);
+    apiBox.style.display = "block";
   }
 
   /* DOCUMENT VERIFICATION ONLY */
