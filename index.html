@@ -1,129 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Vida Web SDK Debug Demo</title>
-  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
-  <style>
-    body { font-family: Arial; padding: 40px; background: #f4f6f9; }
-    button {
-      padding: 10px 18px;
-      margin-right: 10px;
-      margin-bottom: 10px;
-      background: #0d6efd;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #sdk-container { margin-top: 20px; }
-    #log-box {
-      margin-top: 20px;
-      background: #111;
-      color: #0f0;
-      padding: 15px;
-      border-radius: 6px;
-      font-size: 12px;
-      height: 200px;
-      overflow: auto;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <title>Vida Web SDK Test</title>
+  <script src="https://unpkg.com/vida-web-sdk/dist/vida-web-sdk.umd.js"></script>
 </head>
-
 <body>
 
-<h2>Vida Web SDK Debug (Sandbox)</h2>
+  <h2>Vida Identity Verification Test</h2>
 
-<button onclick="startDoc()">Document Verification</button>
-<button onclick="startLiveness()">Liveness</button>
-<button onclick="startFull()">Full Identity</button>
+  <button onclick="startVerification()">Start Identity Verification</button>
 
-<div id="sdk-container"></div>
-<div id="log-box"></div>
+  <br /><br />
 
-<script>
+  <!-- SDK Container (WAJIB ADA & HARUS SAMA DENGAN elementId) -->
+  <div id="sdk-container"></div>
 
-function log(message) {
-  console.log(message);
-  const logBox = document.getElementById("log-box");
-  logBox.innerHTML += message + "\n";
-}
+  <script>
+    async function startVerification() {
+      console.log("Fetching token from backend...");
 
-async function getToken() {
-  log("Fetching token from backend...");
-  const response = await fetch("/.netlify/functions/get-token");
+      try {
+        const res = await fetch('/.netlify/functions/get-token');
+        const data = await res.json();
 
-  if (!response.ok) {
-    throw new Error("Token API failed: " + response.status);
-  }
+        console.log("Token received:", data);
 
-  const data = await response.json();
-  log("Token received");
-  return data;
-}
-
-async function initWorkflow(type) {
-  try {
-    log("Starting workflow: " + type);
-
-    document.getElementById("sdk-container").innerHTML = "";
-
-    if (!window.VidaSDK) {
-      log("ERROR: VidaSDK not loaded!");
-      return;
-    }
-
-    const data = await getToken();
-
-    log("Initializing SDK...");
-
-    window.VidaSDK.init({
-      token: data.token,
-      signingKey: data.signingKey,
-      elementId: "sdk-container",
-      workflow: type,
-      countryCode: "IDN",
-      locale: "EN",
-      partnerTransactionId: crypto.randomUUID(),
-
-      workflowConfigs: {
-        identityVerification: {
-          userConsent: {
-            obtained: true,
-            obtainedAt: Date.now(),
-          },
+        if (!data.access_token || !data.signing_key) {
+          alert("Token or Signing Key missing!");
+          return;
         }
-      },
 
-      onComplete: (result) => {
-        log("Workflow Completed");
-        log(JSON.stringify(result));
-      },
+        console.log("Initializing SDK...");
 
-      onError: (error) => {
-        log("Workflow Error:");
-        log(JSON.stringify(error));
-      },
-    });
+        window.VidaSDK.init({
+          token: data.access_token,              // ⚠️ WAJIB token (bukan accessToken)
+          signingKey: data.signing_key,          // ⚠️ WAJIB ada
+          elementId: "sdk-container",            // ⚠️ HARUS sama dengan div id
+          workflow: "identity-verification",     // ⚠️ MANDATORY
+          countryCode: "IDN",                    // ⚠️ WAJIB isi
+          locale: "EN",
+          partnerTransactionId: crypto.randomUUID(),
 
-  } catch (err) {
-    log("Exception:");
-    log(err.message);
-  }
-}
+          workflowConfigs: {
+            identityVerification: {
+              userConsent: {
+                obtained: true,
+                obtainedAt: Date.now(),
+              },
+              docVerification: {
+                skipDocBackSideCapture: false,
+                skipIntroductionScreen: false,
+                skipDocSelectionScreen: false,
+                skipTutorialScreen: false,
+                maxRetryAttempts: 3,
+                captureTimeOut: 120000,
+              },
+              faceMatch: {
+                skipTutorialScreen: false,
+                maxRetryAttempts: 3,
+                detectionTimeOut: 120000,
+              }
+            }
+          },
 
-function startDoc() {
-  initWorkflow("document-verification");
-}
+          onComplete: (data) => {
+            console.log("Verification completed:", data);
+            alert("Verification Completed!");
+          },
 
-function startLiveness() {
-  initWorkflow("liveness");
-}
+          onError: (error) => {
+            console.error("Verification error:", error);
+            alert("Error occurred. Check console.");
+          }
+        });
 
-function startFull() {
-  initWorkflow("identity-verification");
-}
-
-</script>
+      } catch (err) {
+        console.error("Failed to start:", err);
+      }
+    }
+  </script>
 
 </body>
 </html>
