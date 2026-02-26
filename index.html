@@ -1,67 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>VIDA Identity Verification</title>
-  <script src="https://cdn.sandbox.vida.id/web-sdk/v2/vida-web-sdk.js"></script>
-</head>
-<body>
+<script>
+document.getElementById("startBtn").addEventListener("click", async function () {
 
-  <h2>VIDA Identity Verification Demo</h2>
-  <button id="startBtn">Start Verification</button>
+  try {
 
-  <div id="vida-container" style="margin-top:20px;"></div>
+    // 🔥 Ambil token dari Netlify Function
+    const res = await fetch("/.netlify/functions/token");
+    const tokenData = await res.json();
 
-  <script>
-    document.getElementById("startBtn").addEventListener("click", function () {
+    if (!tokenData.access_token) {
+      alert("Failed to get token");
+      console.error(tokenData);
+      return;
+    }
 
-      const vida = new VidaWebSdk({
-        containerId: "vida-container",
+    // 🔥 Reset container biar tidak blank
+    document.getElementById("vida-container").innerHTML = "";
 
-        // 🔹 Token dari backend kamu
-        accessToken: "YOUR_ACCESS_TOKEN_HERE",
+    const vida = new VidaWebSdk({
+      containerId: "vida-container",
+      accessToken: tokenData.access_token,
 
-        workflowConfigs: {
-          identityVerification: {
-
-            userConsent: {
-              obtained: true,
-              obtainedAt: Date.now(),
-            },
-
-            docVerification: {
-              skipDocBackSideCapture: true,   // ✅ Tambahan di sini
-              skipIntroductionScreen: false,
-              skipDocSelectionScreen: false,
-              skipTutorialScreen: false,
-              maxRetryAttempts: 3,
-              captureTimeOut: 120000,
-            },
-
-            faceMatch: {
-              skipTutorialScreen: false,
-              maxRetryAttempts: 3,
-              detectionTimeOut: 120000,
-            }
-
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: {
+            obtained: true,
+            obtainedAt: Date.now(),
+          },
+          docVerification: {
+            skipDocBackSideCapture: true,
+            maxRetryAttempts: 3,
+          },
+          faceMatch: {
+            maxRetryAttempts: 3,
           }
-        },
-
-        onSuccess: function (response) {
-          console.log("Verification Success:", response);
-          alert("Verification Completed");
-        },
-
-        onError: function (error) {
-          console.error("Verification Error:", error);
-          alert("Verification Failed");
         }
+      },
 
-      });
+      onSuccess: function (response) {
+        console.log("Success:", response);
+      },
 
-      vida.start();
-
+      onError: function (error) {
+        console.error("Error:", error);
+      }
     });
-  </script>
 
-</body>
-</html>
+    vida.start();
+
+  } catch (err) {
+    console.error("Token fetch error:", err);
+  }
+
+});
+</script>
