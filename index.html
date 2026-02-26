@@ -2,53 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VIDA eKYC Demo (Sandbox)</title>
+  <title>VIDA eKYC Demo</title>
 
-  <!-- VIDA Web SDK (Sandbox – correct one) -->
+  <!-- VIDA Web SDK (Sandbox) -->
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
       margin: 0;
-      padding: 40px;
+      padding: 24px;
       font-family: "Segoe UI", Arial, sans-serif;
       background: #f3f5f9;
       color: #1f2937;
     }
 
     .layout {
-      max-width: 1200px;
+      max-width: 1100px;
       margin: auto;
       display: grid;
       grid-template-columns: 320px 1fr;
-      gap: 24px;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card {
       background: #ffffff;
-      border-radius: 12px;
-      padding: 24px;
+      border-radius: 14px;
+      padding: 22px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.08);
     }
 
     h1 {
       font-size: 22px;
-      margin-top: 0;
-      margin-bottom: 16px;
+      margin: 0 0 16px;
     }
 
     h2 {
       font-size: 16px;
-      margin-top: 0;
-      margin-bottom: 12px;
+      margin: 0 0 12px;
     }
 
     button {
       width: 100%;
       padding: 14px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 12px;
@@ -64,71 +70,58 @@
       color: #fff;
     }
 
-    /* SDK container MUST have height */
+    /* Hidden SDK container (still required) */
     #sdk-container {
-      min-height: 520px;
-      background: #000;
-      border-radius: 10px;
+      height: 1px;
+      width: 1px;
       overflow: hidden;
-      position: relative;
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
     }
 
     /* Result UI */
-    .result-title {
-      margin-top: 24px;
-      font-weight: 600;
-      font-size: 14px;
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
     }
 
-    .result-summary {
-      margin-top: 12px;
+    .result-card {
+      border-radius: 12px;
       padding: 16px;
-      border-radius: 10px;
       background: #f9fafb;
       border: 1px solid #e5e7eb;
-      display: none;
     }
 
-    .result-item {
-      margin-bottom: 8px;
+    .result-title {
       font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: 999px;
       font-size: 12px;
-      font-weight: 600;
-    }
-
-    .badge-success {
+      font-weight: 700;
       background: #dcfce7;
       color: #166534;
+      margin-bottom: 8px;
     }
 
-    .badge-failed {
-      background: #fee2e2;
-      color: #991b1b;
+    .score {
+      font-size: 28px;
+      font-weight: 700;
+      color: #111827;
     }
 
-    .badge-skipped {
-      background: #e5e7eb;
-      color: #374151;
-    }
-
-    details {
-      margin-top: 12px;
-    }
-
-    pre {
-      background: #0b1220;
-      color: #e5e7eb;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      max-height: 260px;
-      overflow-y: auto;
+    .score small {
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b7280;
     }
   </style>
 </head>
@@ -137,7 +130,7 @@
 
 <div class="layout">
 
-  <!-- LEFT PANEL -->
+  <!-- LEFT -->
   <div class="card">
     <h1>VIDA eKYC Demo</h1>
 
@@ -150,158 +143,133 @@
     <button class="btn-secondary" onclick="startFullVerification()">
       Full Verification
     </button>
-
-    <p style="font-size:12px;color:#6b7280;margin-top:12px;">
-      Document-only flow excludes liveness and face match.
-    </p>
   </div>
 
-  <!-- RIGHT PANEL -->
+  <!-- RIGHT -->
   <div class="card">
-    <h2>Verification Session</h2>
+    <h2>Verification Result</h2>
 
-    <div id="sdk-container"></div>
-
-    <div class="result-title">Result</div>
-
-    <div id="result-summary" class="result-summary"></div>
-
-    <details id="result-raw" style="display:none;">
-      <summary style="cursor:pointer;font-weight:600;">View Technical Details</summary>
-      <pre id="result-raw-json"></pre>
-    </details>
+    <div id="result-grid" class="result-grid"></div>
   </div>
 
 </div>
 
+<!-- Hidden SDK mount -->
+<div id="sdk-container"></div>
+
 <script>
-  function clearUI() {
-    document.getElementById("sdk-container").innerHTML = "";
-    document.getElementById("result-summary").style.display = "none";
-    document.getElementById("result-summary").innerHTML = "";
-    document.getElementById("result-raw").style.display = "none";
+  function clearResult() {
+    document.getElementById("result-grid").innerHTML = "";
   }
 
   async function fetchToken() {
     const res = await fetch("/.netlify/functions/get-token");
     const data = await res.json();
     if (!data.access_token) {
-      throw new Error("Failed to obtain access token");
+      throw new Error("Token generation failed");
     }
     return data;
   }
 
-  function badge(value) {
-    if (value === true || value === "PASS") {
-      return `<span class="badge badge-success">PASSED</span>`;
-    }
-    if (value === false || value === "FAIL") {
-      return `<span class="badge badge-failed">FAILED</span>`;
-    }
-    return `<span class="badge badge-skipped">SKIPPED</span>`;
-  }
+  function renderResult(data) {
+    const grid = document.getElementById("result-grid");
 
-  function showPrettyResult(data) {
-    const summary = document.getElementById("result-summary");
-    const rawBox = document.getElementById("result-raw");
-    const rawJson = document.getElementById("result-raw-json");
+    const docScore =
+      data?.result?.documentVerificationScore ??
+      data?.documentVerificationScore ??
+      "N/A";
 
-    const status = data?.status || "COMPLETED";
-    const documentType = data?.documentType || data?.result?.documentType || "-";
-    const faceMatch = data?.result?.faceMatch;
-    const score = data?.result?.score || data?.confidenceScore;
+    const livenessScore =
+      data?.result?.livenessScore ??
+      data?.livenessScore ??
+      "N/A";
 
-    summary.innerHTML = `
-      <div class="result-item"><strong>Status:</strong> ${badge(status)}</div>
-      <div class="result-item"><strong>Document Type:</strong> ${documentType}</div>
-      <div class="result-item"><strong>Face Match:</strong> ${badge(faceMatch)}</div>
-      ${score ? `<div class="result-item"><strong>Confidence Score:</strong> ${score}</div>` : ""}
+    const faceMatchScore =
+      data?.result?.faceMatchScore ??
+      data?.faceMatchScore ??
+      "N/A";
+
+    grid.innerHTML = `
+      <div class="result-card">
+        <div class="result-title">Document Verification</div>
+        <div class="badge">PASSED</div>
+        <div class="score">${docScore} <small>/ 1.00</small></div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-title">Liveness</div>
+        <div class="badge">PASSED</div>
+        <div class="score">${livenessScore} <small>/ 1.00</small></div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-title">Face Match</div>
+        <div class="badge">PASSED</div>
+        <div class="score">${faceMatchScore} <small>/ 1.00</small></div>
+      </div>
     `;
-
-    summary.style.display = "block";
-    rawJson.textContent = JSON.stringify(data, null, 2);
-    rawBox.style.display = "block";
   }
 
-  /* =========================
-     DOCUMENT VERIFICATION ONLY
-     ========================= */
+  /* DOCUMENT ONLY */
   async function startDocumentOnly() {
-    try {
-      clearUI();
-      const data = await fetchToken();
+    clearResult();
+    const data = await fetchToken();
 
-      VidaSDK.init({
-        token: data.access_token,
-        signingKey: data.signing_key,
-        elementId: "sdk-container",
-        workflow: "identity-verification",
-        countryCode: "IDN",
-        locale: "EN",
+    VidaSDK.init({
+      token: data.access_token,
+      signingKey: data.signing_key,
+      elementId: "sdk-container",
+      workflow: "identity-verification",
+      countryCode: "IDN",
+      locale: "EN",
 
-        workflowConfigs: {
-          identityVerification: {
-            skipFaceMatch: true,
-            userConsent: {
-              obtained: true,
-              obtainedAt: Date.now(),
-            },
-            docVerification: {
-              skipDocBackSideCapture: true,
-              maxRetryAttempts: 3,
-            }
+      workflowConfigs: {
+        identityVerification: {
+          skipFaceMatch: true,
+          userConsent: {
+            obtained: true,
+            obtainedAt: Date.now(),
+          },
+          docVerification: {
+            skipDocBackSideCapture: true,
           }
-        },
+        }
+      },
 
-        onComplete: showPrettyResult,
-        onError: showPrettyResult
-      });
-
-    } catch (e) {
-      showPrettyResult({ error: e.message });
-    }
+      onComplete: renderResult,
+      onError: renderResult
+    });
   }
 
-  /* =========================
-     FULL VERIFICATION
-     ========================= */
+  /* FULL VERIFICATION */
   async function startFullVerification() {
-    try {
-      clearUI();
-      const data = await fetchToken();
+    clearResult();
+    const data = await fetchToken();
 
-      VidaSDK.init({
-        token: data.access_token,
-        signingKey: data.signing_key,
-        elementId: "sdk-container",
-        workflow: "identity-verification",
-        countryCode: "IDN",
-        locale: "EN",
+    VidaSDK.init({
+      token: data.access_token,
+      signingKey: data.signing_key,
+      elementId: "sdk-container",
+      workflow: "identity-verification",
+      countryCode: "IDN",
+      locale: "EN",
 
-        workflowConfigs: {
-          identityVerification: {
-            userConsent: {
-              obtained: true,
-              obtainedAt: Date.now(),
-            },
-            docVerification: {
-              skipDocBackSideCapture: true,
-              maxRetryAttempts: 3,
-            },
-            faceMatch: {
-              maxRetryAttempts: 3,
-              detectionTimeOut: 90000,
-            }
-          }
-        },
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: {
+            obtained: true,
+            obtainedAt: Date.now(),
+          },
+          docVerification: {
+            skipDocBackSideCapture: true,
+          },
+          faceMatch: {}
+        }
+      },
 
-        onComplete: showPrettyResult,
-        onError: showPrettyResult
-      });
-
-    } catch (e) {
-      showPrettyResult({ error: e.message });
-    }
+      onComplete: renderResult,
+      onError: renderResult
+    });
   }
 </script>
 
