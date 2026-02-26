@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>VIDA Identity Verification Demo</title>
 
-  <!-- VIDA Web SDK (Sandbox) -->
-  <script src="https://cdn.sandbox.vida.id/web-sdk/v2/vida-web-sdk.js"></script>
+  <!-- ✅ CORRECT VIDA WEB SDK (Sandbox) -->
+  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
 
   <style>
     body {
@@ -21,7 +21,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    #vida-container {
+    #sdk-container {
       margin-top: 20px;
     }
     #log-box {
@@ -44,12 +44,10 @@
 
 <button id="startBtn">Start Verification</button>
 
-<div id="vida-container"></div>
+<div id="sdk-container"></div>
 <div id="log-box"></div>
 
 <script>
-  let vidaInstance = null;
-
   function log(msg) {
     console.log(msg);
     const box = document.getElementById("log-box");
@@ -59,7 +57,7 @@
 
   window.onload = function () {
     log("Page loaded");
-    log("VidaWebSdk exists: " + !!window.VidaWebSdk);
+    log("VidaSDK exists: " + !!window.VidaSDK);
   };
 
   document.getElementById("startBtn").addEventListener("click", async function () {
@@ -67,39 +65,28 @@
       log("=================================");
       log("Start button clicked");
 
-      // 1️⃣ Fetch fresh token from Netlify Function
-      log("Calling /.netlify/functions/get-token ...");
+      // 1️⃣ Get fresh token
+      log("Calling /.netlify/functions/get-token");
       const res = await fetch("/.netlify/functions/get-token");
+      const tokenData = await res.json();
 
-      log("Token response status: " + res.status);
+      log("Token received");
+      log("Token length: " + tokenData.access_token.length);
 
-      const raw = await res.text();
-      log("Raw token response: " + raw);
+      // 2️⃣ Clear container
+      document.getElementById("sdk-container").innerHTML = "";
 
-      const tokenData = JSON.parse(raw);
-
-      if (!tokenData.access_token) {
-        log("ERROR: access_token missing");
-        return;
-      }
-
-      log("Access token length: " + tokenData.access_token.length);
-
-      // 2️⃣ Reset container & instance
-      document.getElementById("vida-container").innerHTML = "";
-
-      if (vidaInstance) {
-        log("Destroying previous VIDA instance");
-        vidaInstance.destroy();
-        vidaInstance = null;
-      }
-
-      // 3️⃣ Init VIDA SDK
+      // 3️⃣ Init VIDA SDK (CORRECT WAY)
       log("Initializing VIDA SDK...");
 
-      vidaInstance = new VidaWebSdk({
-        containerId: "vida-container",
-        accessToken: tokenData.access_token,
+      window.VidaSDK.init({
+        token: tokenData.access_token,        // ✅ correct key
+        signingKey: tokenData.signing_key,    // ✅ required
+        elementId: "sdk-container",
+        workflow: "identity-verification",
+        countryCode: "IDN",
+        locale: "EN",
+        partnerTransactionId: crypto.randomUUID(),
 
         workflowConfigs: {
           identityVerification: {
@@ -107,34 +94,28 @@
               obtained: true,
               obtainedAt: Date.now(),
             },
-
             docVerification: {
               skipDocBackSideCapture: true, // ✅ as requested
               maxRetryAttempts: 3,
-              captureTimeOut: 120000,
             },
-
             faceMatch: {
               maxRetryAttempts: 3,
-              detectionTimeOut: 120000,
             }
           }
         },
 
-        onSuccess: function (response) {
-          log("✅ VERIFICATION SUCCESS");
-          log(JSON.stringify(response, null, 2));
+        onComplete: (data) => {
+          log("✅ VERIFICATION COMPLETED");
+          log(JSON.stringify(data, null, 2));
         },
 
-        onError: function (error) {
+        onError: (error) => {
           log("❌ VERIFICATION ERROR");
           log(JSON.stringify(error, null, 2));
         }
       });
 
-      // 4️⃣ Start flow
-      log("Starting VIDA flow...");
-      vidaInstance.start();
+      log("VidaSDK.init() called");
 
     } catch (err) {
       log("❌ FATAL ERROR");
