@@ -1,55 +1,85 @@
-<script>
-document.getElementById("startBtn").addEventListener("click", async function () {
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VIDA Identity Verification</title>
+  <script src="https://cdn.sandbox.vida.id/web-sdk/v2/vida-web-sdk.js"></script>
+</head>
+<body>
 
-  try {
+  <h2>VIDA Identity Verification Demo</h2>
+  <button id="startBtn">Start Verification</button>
 
-    // 🔥 Ambil token dari Netlify Function
-    const res = await fetch("/.netlify/functions/token");
-    const tokenData = await res.json();
+  <div id="vida-container" style="margin-top:20px;"></div>
 
-    if (!tokenData.access_token) {
-      alert("Failed to get token");
-      console.error(tokenData);
-      return;
-    }
+  <script>
+    let vidaInstance = null;
 
-    // 🔥 Reset container biar tidak blank
-    document.getElementById("vida-container").innerHTML = "";
+    document.getElementById("startBtn").addEventListener("click", async function () {
 
-    const vida = new VidaWebSdk({
-      containerId: "vida-container",
-      accessToken: tokenData.access_token,
+      try {
 
-      workflowConfigs: {
-        identityVerification: {
-          userConsent: {
-            obtained: true,
-            obtainedAt: Date.now(),
-          },
-          docVerification: {
-            skipDocBackSideCapture: true,
-            maxRetryAttempts: 3,
-          },
-          faceMatch: {
-            maxRetryAttempts: 3,
-          }
+        console.log("Requesting token from Netlify function...");
+
+        // 🔥 Ambil token dari get-token.js
+        const res = await fetch("/.netlify/functions/get-token");
+        const tokenData = await res.json();
+
+        console.log("Token response:", tokenData);
+
+        if (!tokenData.access_token) {
+          alert("Failed to obtain access token");
+          return;
         }
-      },
 
-      onSuccess: function (response) {
-        console.log("Success:", response);
-      },
+        // 🔥 Reset container supaya tidak blank
+        document.getElementById("vida-container").innerHTML = "";
 
-      onError: function (error) {
-        console.error("Error:", error);
+        if (vidaInstance) {
+          vidaInstance.destroy();
+          vidaInstance = null;
+        }
+
+        vidaInstance = new VidaWebSdk({
+          containerId: "vida-container",
+          accessToken: tokenData.access_token,
+
+          workflowConfigs: {
+            identityVerification: {
+              userConsent: {
+                obtained: true,
+                obtainedAt: Date.now(),
+              },
+              docVerification: {
+                skipDocBackSideCapture: true,
+                maxRetryAttempts: 3,
+              },
+              faceMatch: {
+                maxRetryAttempts: 3,
+              }
+            }
+          },
+
+          onSuccess: function (response) {
+            console.log("Verification Success:", response);
+            alert("Verification Completed");
+          },
+
+          onError: function (error) {
+            console.error("Verification Error:", error);
+            alert("Verification Failed");
+          }
+
+        });
+
+        vidaInstance.start();
+
+      } catch (error) {
+        console.error("Error fetching token:", error);
+        alert("Error fetching token");
       }
+
     });
+  </script>
 
-    vida.start();
-
-  } catch (err) {
-    console.error("Token fetch error:", err);
-  }
-
-});
-</script>
+</body>
+</html>
