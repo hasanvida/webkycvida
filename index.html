@@ -70,7 +70,6 @@
       color: #fff;
     }
 
-    /* Result status */
     .result-status {
       padding: 20px;
       border-radius: 12px;
@@ -90,7 +89,6 @@
       color: #991b1b;
     }
 
-    /* Transaction details */
     .transaction-details {
       padding: 16px;
       border-radius: 10px;
@@ -104,7 +102,6 @@
       margin-bottom: 8px;
     }
 
-    /* Dropdown (API response) */
     details {
       border-radius: 10px;
       background: #0b1220;
@@ -115,7 +112,6 @@
       cursor: pointer;
       font-weight: 600;
       color: #e5e7eb;
-      outline: none;
     }
 
     pre {
@@ -123,7 +119,6 @@
       background: #0b1220;
       color: #e5e7eb;
       font-size: 12px;
-      overflow-x: auto;
       white-space: pre-wrap;
     }
   </style>
@@ -133,7 +128,7 @@
 
 <div class="layout">
 
-  <!-- LEFT PANEL -->
+  <!-- LEFT -->
   <div class="card">
     <h1>VIDA eKYC Demo</h1>
 
@@ -148,12 +143,11 @@
     </button>
   </div>
 
-  <!-- RIGHT PANEL -->
+  <!-- RIGHT -->
   <div class="card">
     <h2>Result</h2>
 
     <div id="result-status"></div>
-
     <div id="transaction-details" style="display:none;"></div>
 
     <details id="api-response" style="display:none;">
@@ -164,18 +158,9 @@
 
 </div>
 
-<!-- Hidden VIDA SDK container (required) -->
-<div
-  id="sdk-container"
-  style="
-    position: fixed;
-    width: 1px;
-    height: 1px;
-    top: -9999px;
-    left: -9999px;
-    overflow: hidden;
-  ">
-</div>
+<!-- Hidden SDK container -->
+<div id="sdk-container"
+  style="position:fixed;width:1px;height:1px;top:-9999px;left:-9999px;"></div>
 
 <script>
   function clearResult() {
@@ -184,128 +169,93 @@
     document.getElementById("transaction-details").style.display = "none";
     document.getElementById("transaction-details").innerHTML = "";
     document.getElementById("api-response").style.display = "none";
-    document.getElementById("api-response-json").textContent = "";
   }
 
   async function fetchToken() {
     const res = await fetch("/.netlify/functions/get-token");
-    const data = await res.json();
-    if (!data.access_token) {
-      throw new Error("Failed to obtain access token");
-    }
-    return data;
+    return res.json();
   }
 
   function showPassResult(data) {
-    const statusBox = document.getElementById("result-status");
-    const detailsBox = document.getElementById("transaction-details");
-    const apiBox = document.getElementById("api-response");
-    const apiJson = document.getElementById("api-response-json");
+    document.getElementById("result-status").className = "result-status result-pass";
+    document.getElementById("result-status").textContent = "PASSED";
 
-    statusBox.className = "result-status result-pass";
-    statusBox.textContent = "PASSED";
-
-    detailsBox.style.display = "block";
-    detailsBox.innerHTML = `
-      <div class="transaction-item"><strong>Transaction ID:</strong> ${data?.partnerTransactionId || "-"}</div>
-      <div class="transaction-item"><strong>Workflow:</strong> identity-verification</div>
-      <div class="transaction-item"><strong>Country:</strong> IDN</div>
-      <div class="transaction-item"><strong>Completed At:</strong> ${new Date().toLocaleString()}</div>
+    document.getElementById("transaction-details").style.display = "block";
+    document.getElementById("transaction-details").innerHTML = `
+      <div class="transaction-item"><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
+      <div class="transaction-item"><b>Completed At:</b> ${new Date().toLocaleString()}</div>
     `;
 
-    apiJson.textContent = JSON.stringify(data, null, 2);
-    apiBox.style.display = "block";
+    document.getElementById("api-response-json").textContent =
+      JSON.stringify(data, null, 2);
+    document.getElementById("api-response").style.display = "block";
   }
 
-  function showFailResult(error) {
-    const statusBox = document.getElementById("result-status");
-    const detailsBox = document.getElementById("transaction-details");
-    const apiBox = document.getElementById("api-response");
-    const apiJson = document.getElementById("api-response-json");
-
-    statusBox.className = "result-status result-fail";
-    statusBox.textContent = "NOT PASSED";
-
-    detailsBox.style.display = "block";
-    detailsBox.innerHTML = `
-      <div class="transaction-item"><strong>Completed At:</strong> ${new Date().toLocaleString()}</div>
-      <div class="transaction-item"><strong>Reason:</strong> ${error?.message || "Verification failed"}</div>
-    `;
-
-    apiJson.textContent = JSON.stringify(error, null, 2);
-    apiBox.style.display = "block";
+  function showFailResult(err) {
+    document.getElementById("result-status").className = "result-status result-fail";
+    document.getElementById("result-status").textContent = "NOT PASSED";
   }
 
-  /* DOCUMENT VERIFICATION ONLY */
   async function startDocumentOnly() {
-    try {
-      clearResult();
-      const data = await fetchToken();
+    clearResult();
+    const t = await fetchToken();
 
-      VidaSDK.init({
-        token: data.access_token,
-        signingKey: data.signing_key,
-        elementId: "sdk-container",
-        workflow: "identity-verification",
-        countryCode: "IDN",
-        locale: "EN",
+    VidaSDK.init({
+      token: t.access_token,
+      signingKey: t.signing_key,
+      elementId: "sdk-container",
+      workflow: "identity-verification",
+      countryCode: "IDN",
+      locale: "EN",
 
-        workflowConfigs: {
-          identityVerification: {
-            skipFaceMatch: true,
-            userConsent: {
-              obtained: true,
-              obtainedAt: Date.now(),
-            },
-            docVerification: {
-              skipDocBackSideCapture: true,
+      workflowConfigs: {
+        identityVerification: {
+          skipFaceMatch: true,
+          userConsent: { obtained: true, obtainedAt: Date.now() },
+          docVerification: {
+            maxRetryAttempts: 3,
+            skipDocBackSideCapture: true,
+            hideDescriptions: {
+              documentPreview: false
             }
           }
-        },
+        }
+      },
 
-        onComplete: showPassResult,
-        onError: showFailResult
-      });
-
-    } catch (e) {
-      showFailResult(e);
-    }
+      onComplete: showPassResult,
+      onError: showFailResult
+    });
   }
 
-  /* FULL VERIFICATION */
   async function startFullVerification() {
-    try {
-      clearResult();
-      const data = await fetchToken();
+    clearResult();
+    const t = await fetchToken();
 
-      VidaSDK.init({
-        token: data.access_token,
-        signingKey: data.signing_key,
-        elementId: "sdk-container",
-        workflow: "identity-verification",
-        countryCode: "IDN",
-        locale: "EN",
+    VidaSDK.init({
+      token: t.access_token,
+      signingKey: t.signing_key,
+      elementId: "sdk-container",
+      workflow: "identity-verification",
+      countryCode: "IDN",
+      locale: "EN",
 
-        workflowConfigs: {
-          identityVerification: {
-            userConsent: {
-              obtained: true,
-              obtainedAt: Date.now(),
-            },
-            docVerification: {
-              skipDocBackSideCapture: true,
-            },
-            faceMatch: {}
-          }
-        },
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: { obtained: true, obtainedAt: Date.now() },
+          docVerification: {
+            maxRetryAttempts: 3,
+            skipDocBackSideCapture: true,
+            hideDescriptions: {
+              documentPreview: false
+            }
+          },
+          faceMatch: {}
+        }
+      },
 
-        onComplete: showPassResult,
-        onError: showFailResult
-      });
-
-    } catch (e) {
-      showFailResult(e);
-    }
+      onComplete: showPassResult,
+      onError: showFailResult
+    });
   }
 </script>
 
