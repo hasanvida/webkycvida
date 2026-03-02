@@ -57,6 +57,12 @@
     .btn-secondary { background: #111827; color: #fff; }
     .btn-tertiary { background: #059669; color: #fff; }
 
+    .toggle-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
     .result-status {
       padding: 20px;
       border-radius: 12px;
@@ -69,35 +75,6 @@
     .result-pass { background: #dcfce7; color: #166534; }
     .result-fail { background: #fee2e2; color: #991b1b; }
 
-    .transaction-details {
-      padding: 16px;
-      border-radius: 10px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
-
-    details {
-      border-radius: 10px;
-      background: #0b1220;
-      padding: 12px;
-    }
-
-    summary {
-      cursor: pointer;
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-
-    pre {
-      margin-top: 10px;
-      background: #0b1220;
-      color: #e5e7eb;
-      font-size: 12px;
-      white-space: pre-wrap;
-    }
-
     #sdk-container {
       width: 100%;
       height: 520px;
@@ -106,6 +83,15 @@
       display: none;
       margin-top: 16px;
       border: 1px solid #e5e7eb;
+    }
+
+    pre {
+      background: #0b1220;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -118,14 +104,24 @@
   <div class="card">
     <h1>VIDA eKYC Demo</h1>
 
+    <h2>Country</h2>
+    <div class="toggle-group">
+      <button id="btn-id" class="btn-primary" onclick="setCountry('ID')">
+        Indonesia 🇮🇩
+      </button>
+      <button id="btn-my" class="btn-secondary" onclick="setCountry('MY')">
+        Malaysia 🇲🇾
+      </button>
+    </div>
+
     <h2>Verification Options</h2>
 
     <button class="btn-primary" onclick="startDocumentOnly()">
-      Document Verification Only (KTP)
+      Document Verification Only
     </button>
 
     <button class="btn-secondary" onclick="startFullVerification()">
-      Full Verification (KTP + Face)
+      Full Verification
     </button>
 
     <button class="btn-tertiary" onclick="startLivenessOnly()">
@@ -136,26 +132,36 @@
   <!-- RIGHT -->
   <div class="card">
     <h2>Result</h2>
-
     <div id="result-status"></div>
-    <div id="transaction-details" style="display:none;"></div>
-
-    <details id="api-response" style="display:none;">
-      <summary>View Full API Response</summary>
-      <pre id="api-response-json"></pre>
-    </details>
-
+    <pre id="api-response" style="display:none;"></pre>
     <div id="sdk-container"></div>
   </div>
 
 </div>
 
 <script>
+  let selectedCountry = "ID";
+
+  function setCountry(country) {
+    selectedCountry = country;
+
+    document.getElementById("btn-id").className =
+      country === "ID" ? "btn-primary" : "btn-secondary";
+
+    document.getElementById("btn-my").className =
+      country === "MY" ? "btn-primary" : "btn-secondary";
+  }
+
+  function getCountryConfig() {
+    if (selectedCountry === "MY") {
+      return { countryCode: "MYS" };
+    }
+    return { countryCode: "IDN" };
+  }
+
   function clearResult() {
     document.getElementById("result-status").className = "";
     document.getElementById("result-status").textContent = "";
-    document.getElementById("transaction-details").style.display = "none";
-    document.getElementById("transaction-details").innerHTML = "";
     document.getElementById("api-response").style.display = "none";
     document.getElementById("sdk-container").style.display = "none";
     document.getElementById("sdk-container").innerHTML = "";
@@ -166,23 +172,16 @@
     return res.json();
   }
 
-  function showPassResult(data) {
+  function showPass(data) {
     document.getElementById("result-status").className =
       "result-status result-pass";
     document.getElementById("result-status").textContent = "PASSED";
-
-    document.getElementById("transaction-details").style.display = "block";
-    document.getElementById("transaction-details").innerHTML = `
-      <div><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
-      <div><b>Completed At:</b> ${new Date().toLocaleString()}</div>
-    `;
-
-    document.getElementById("api-response-json").textContent =
-      JSON.stringify(data, null, 2);
     document.getElementById("api-response").style.display = "block";
+    document.getElementById("api-response").textContent =
+      JSON.stringify(data, null, 2);
   }
 
-  function showFailResult(error) {
+  function showFail(error) {
     document.getElementById("result-status").className =
       "result-status result-fail";
     document.getElementById("result-status").textContent = "NOT PASSED";
@@ -192,65 +191,61 @@
   async function startDocumentOnly() {
     clearResult();
     const t = await fetchToken();
+    const cfg = getCountryConfig();
 
     VidaSDK.init({
       token: t.access_token,
       signingKey: t.signing_key,
       workflow: "identity-verification",
-      countryCode: "IDN",
+      countryCode: cfg.countryCode,
       locale: "EN",
 
       workflowConfigs: {
         identityVerification: {
-          documentType: "KTP",
           skipFaceMatch: true,
           userConsent: { obtained: true, obtainedAt: Date.now() },
 
           docVerification: {
-            skipIntroductionScreen: true,
-            skipDocSelectionScreen: true,
-            skipTutorialScreen: true,
-            skipDocBackSideCapture: true
+            skipIntroductionScreen: false,
+            skipDocSelectionScreen: false,
+            skipTutorialScreen: false
           }
         }
       },
 
-      onComplete: showPassResult,
-      onError: showFailResult
+      onComplete: showPass,
+      onError: showFail
     });
   }
 
   async function startFullVerification() {
     clearResult();
     const t = await fetchToken();
+    const cfg = getCountryConfig();
 
     VidaSDK.init({
       token: t.access_token,
       signingKey: t.signing_key,
       workflow: "identity-verification",
-      countryCode: "IDN",
+      countryCode: cfg.countryCode,
       locale: "EN",
 
       workflowConfigs: {
         identityVerification: {
-          documentType: "KTP",
           userConsent: { obtained: true, obtainedAt: Date.now() },
 
           docVerification: {
-            skipIntroductionScreen: true,
-            skipDocSelectionScreen: true,
-            skipTutorialScreen: true,
-            skipDocBackSideCapture: true
+            skipIntroductionScreen: false,
+            skipDocSelectionScreen: false,
+            skipTutorialScreen: false
           },
 
-          faceMatch: {
-            skipTutorialScreen: true
-          }
+          faceMatch: {}
         }
       },
 
-      onComplete: showPassResult,
-      onError: showFailResult
+      onComplete: showPass,
+      onError: showFail
     });
   }
 
@@ -264,27 +259,13 @@
     VidaSDK.init({
       token: t.access_token,
       signingKey: t.signing_key,
-      elementId: "sdk-container",
       workflow: "liveness",
+      elementId: "sdk-container",
       locale: "EN",
       partnerTransactionId: crypto.randomUUID(),
 
-      workflowConfigs: {
-        liveness: {
-          maxRetryAttempts: 4,
-          detectionTimeOut: 120000
-        }
-      },
-
-      onComplete: (data) => {
-        container.style.display = "none";
-        showPassResult(data);
-      },
-
-      onError: (error) => {
-        container.style.display = "none";
-        showFailResult(error);
-      }
+      onComplete: showPass,
+      onError: showFail
     });
   }
 </script>
