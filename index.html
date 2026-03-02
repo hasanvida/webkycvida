@@ -64,6 +64,7 @@
       padding: 12px;
       border-radius: 10px;
       font-size: 12px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -76,8 +77,12 @@
   <div class="card">
     <h2>Country</h2>
     <div class="toggle">
-      <button id="btn-id" class="btn-primary" onclick="setCountry('ID')">Indonesia 🇮🇩</button>
-      <button id="btn-my" class="btn-secondary" onclick="setCountry('MY')">Malaysia 🇲🇾</button>
+      <button id="btn-id" class="btn-primary" onclick="setCountry('ID')">
+        Indonesia 🇮🇩
+      </button>
+      <button id="btn-my" class="btn-secondary" onclick="setCountry('MY')">
+        Malaysia 🇲🇾
+      </button>
     </div>
 
     <h2>Verification</h2>
@@ -98,10 +103,16 @@
 <script>
   let selectedCountry = "ID";
 
-  function setCountry(c) {
-    selectedCountry = c;
-    btnId.className = c === "ID" ? "btn-primary" : "btn-secondary";
-    btnMy.className = c === "MY" ? "btn-primary" : "btn-secondary";
+  const btnId = document.getElementById("btn-id");
+  const btnMy = document.getElementById("btn-my");
+  const result = document.getElementById("result");
+  const sdkContainer = document.getElementById("sdk-container");
+
+  function setCountry(country) {
+    selectedCountry = country;
+
+    btnId.className = country === "ID" ? "btn-primary" : "btn-secondary";
+    btnMy.className = country === "MY" ? "btn-primary" : "btn-secondary";
   }
 
   async function fetchToken() {
@@ -109,16 +120,8 @@
     return res.json();
   }
 
-  function baseConfig(t, workflow, extra) {
-    return {
-      token: t.access_token,
-      signingKey: t.signing_key,
-      workflow,
-      locale: "EN",
-      ...extra,
-      onComplete: d => result.textContent = JSON.stringify(d, null, 2),
-      onError: e => result.textContent = JSON.stringify(e, null, 2)
-    };
+  function showResult(data) {
+    result.textContent = JSON.stringify(data, null, 2);
   }
 
   function identityConfig(isFull) {
@@ -129,7 +132,7 @@
           identityVerification: {
             userConsent: { obtained: true, obtainedAt: Date.now() },
 
-            /* ⛔ Driving License REMOVED */
+            // ❌ Driving License REMOVED
             documentType: ["MyKad", "MyPR", "MyTentera", "PASSPORT"],
 
             docVerification: {
@@ -143,7 +146,7 @@
       };
     }
 
-    // 🇮🇩 Indonesia (default SDK document list)
+    // 🇮🇩 Indonesia (default)
     return {
       countryCode: "IDN",
       workflowConfigs: {
@@ -162,19 +165,37 @@
   async function startDocumentOnly() {
     result.textContent = "";
     const t = await fetchToken();
-    VidaSDK.init(baseConfig(t, "identity-verification", identityConfig(false)));
+
+    VidaSDK.init({
+      token: t.access_token,
+      signingKey: t.signing_key,
+      workflow: "identity-verification",
+      locale: "EN",
+      ...identityConfig(false),
+      onComplete: showResult,
+      onError: showResult
+    });
   }
 
   async function startFullVerification() {
     result.textContent = "";
     const t = await fetchToken();
-    VidaSDK.init(baseConfig(t, "identity-verification", identityConfig(true)));
+
+    VidaSDK.init({
+      token: t.access_token,
+      signingKey: t.signing_key,
+      workflow: "identity-verification",
+      locale: "EN",
+      ...identityConfig(true),
+      onComplete: showResult,
+      onError: showResult
+    });
   }
 
   async function startLivenessOnly() {
     result.textContent = "";
     const t = await fetchToken();
-    sdk-container.style.display = "block";
+    sdkContainer.style.display = "block";
 
     VidaSDK.init({
       token: t.access_token,
@@ -182,8 +203,8 @@
       workflow: "liveness",
       elementId: "sdk-container",
       locale: "EN",
-      onComplete: d => result.textContent = JSON.stringify(d, null, 2),
-      onError: e => result.textContent = JSON.stringify(e, null, 2)
+      onComplete: showResult,
+      onError: showResult
     });
   }
 </script>
