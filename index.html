@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <title>VIDA eKYC Demo</title>
 
-  <!-- VIDA Web SDK (Sandbox) -->
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -15,7 +13,6 @@
       padding: 24px;
       font-family: "Segoe UI", Arial, sans-serif;
       background: #f3f5f9;
-      color: #1f2937;
     }
 
     .layout {
@@ -26,28 +23,18 @@
       gap: 20px;
     }
 
-    @media (max-width: 768px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
     .card {
-      background: #ffffff;
+      background: #fff;
       border-radius: 14px;
       padding: 22px;
       box-shadow: 0 10px 24px rgba(0,0,0,0.08);
     }
-
-    h1 { font-size: 22px; margin-bottom: 16px; }
-    h2 { font-size: 16px; margin-bottom: 12px; }
 
     button {
       width: 100%;
       padding: 14px;
       border-radius: 10px;
       border: none;
-      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 12px;
@@ -57,31 +44,17 @@
     .btn-secondary { background: #111827; color: #fff; }
     .btn-tertiary { background: #059669; color: #fff; }
 
-    .toggle-group {
+    .toggle {
       display: flex;
       gap: 10px;
       margin-bottom: 16px;
     }
 
-    .result-status {
-      padding: 20px;
-      border-radius: 12px;
-      font-size: 22px;
-      font-weight: 800;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .result-pass { background: #dcfce7; color: #166534; }
-    .result-fail { background: #fee2e2; color: #991b1b; }
-
     #sdk-container {
-      width: 100%;
       height: 520px;
+      display: none;
       border-radius: 12px;
       overflow: hidden;
-      display: none;
-      margin-top: 16px;
       border: 1px solid #e5e7eb;
     }
 
@@ -91,7 +64,6 @@
       padding: 12px;
       border-radius: 10px;
       font-size: 12px;
-      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -102,38 +74,22 @@
 
   <!-- LEFT -->
   <div class="card">
-    <h1>VIDA eKYC Demo</h1>
-
     <h2>Country</h2>
-    <div class="toggle-group">
-      <button id="btn-id" class="btn-primary" onclick="setCountry('ID')">
-        Indonesia 🇮🇩
-      </button>
-      <button id="btn-my" class="btn-secondary" onclick="setCountry('MY')">
-        Malaysia 🇲🇾
-      </button>
+    <div class="toggle">
+      <button id="btn-id" class="btn-primary" onclick="setCountry('ID')">Indonesia 🇮🇩</button>
+      <button id="btn-my" class="btn-secondary" onclick="setCountry('MY')">Malaysia 🇲🇾</button>
     </div>
 
-    <h2>Verification Options</h2>
-
-    <button class="btn-primary" onclick="startDocumentOnly()">
-      Document Verification Only
-    </button>
-
-    <button class="btn-secondary" onclick="startFullVerification()">
-      Full Verification
-    </button>
-
-    <button class="btn-tertiary" onclick="startLivenessOnly()">
-      Liveness Only
-    </button>
+    <h2>Verification</h2>
+    <button class="btn-primary" onclick="startDocumentOnly()">Document Only</button>
+    <button class="btn-secondary" onclick="startFullVerification()">Full Verification</button>
+    <button class="btn-tertiary" onclick="startLivenessOnly()">Liveness Only</button>
   </div>
 
   <!-- RIGHT -->
   <div class="card">
     <h2>Result</h2>
-    <div id="result-status"></div>
-    <pre id="api-response" style="display:none;"></pre>
+    <pre id="result"></pre>
     <div id="sdk-container"></div>
   </div>
 
@@ -142,29 +98,10 @@
 <script>
   let selectedCountry = "ID";
 
-  function setCountry(country) {
-    selectedCountry = country;
-
-    document.getElementById("btn-id").className =
-      country === "ID" ? "btn-primary" : "btn-secondary";
-
-    document.getElementById("btn-my").className =
-      country === "MY" ? "btn-primary" : "btn-secondary";
-  }
-
-  function getCountryConfig() {
-    if (selectedCountry === "MY") {
-      return { countryCode: "MYS" };
-    }
-    return { countryCode: "IDN" };
-  }
-
-  function clearResult() {
-    document.getElementById("result-status").className = "";
-    document.getElementById("result-status").textContent = "";
-    document.getElementById("api-response").style.display = "none";
-    document.getElementById("sdk-container").style.display = "none";
-    document.getElementById("sdk-container").innerHTML = "";
+  function setCountry(c) {
+    selectedCountry = c;
+    btnId.className = c === "ID" ? "btn-primary" : "btn-secondary";
+    btnMy.className = c === "MY" ? "btn-primary" : "btn-secondary";
   }
 
   async function fetchToken() {
@@ -172,89 +109,72 @@
     return res.json();
   }
 
-  function showPass(data) {
-    document.getElementById("result-status").className =
-      "result-status result-pass";
-    document.getElementById("result-status").textContent = "PASSED";
-    document.getElementById("api-response").style.display = "block";
-    document.getElementById("api-response").textContent =
-      JSON.stringify(data, null, 2);
+  function baseConfig(t, workflow, extra) {
+    return {
+      token: t.access_token,
+      signingKey: t.signing_key,
+      workflow,
+      locale: "EN",
+      ...extra,
+      onComplete: d => result.textContent = JSON.stringify(d, null, 2),
+      onError: e => result.textContent = JSON.stringify(e, null, 2)
+    };
   }
 
-  function showFail(error) {
-    document.getElementById("result-status").className =
-      "result-status result-fail";
-    document.getElementById("result-status").textContent = "NOT PASSED";
-    console.error(error);
+  function identityConfig(isFull) {
+    if (selectedCountry === "MY") {
+      return {
+        countryCode: "MYS",
+        workflowConfigs: {
+          identityVerification: {
+            userConsent: { obtained: true, obtainedAt: Date.now() },
+
+            /* ⛔ Driving License REMOVED */
+            documentType: ["MyKad", "MyPR", "MyTentera", "PASSPORT"],
+
+            docVerification: {
+              skipDocSelectionScreen: false,
+              skipIntroductionScreen: false
+            },
+
+            ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
+          }
+        }
+      };
+    }
+
+    // 🇮🇩 Indonesia (default SDK document list)
+    return {
+      countryCode: "IDN",
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: { obtained: true, obtainedAt: Date.now() },
+          docVerification: {
+            skipDocSelectionScreen: false,
+            skipIntroductionScreen: false
+          },
+          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
+        }
+      }
+    };
   }
 
   async function startDocumentOnly() {
-    clearResult();
+    result.textContent = "";
     const t = await fetchToken();
-    const cfg = getCountryConfig();
-
-    VidaSDK.init({
-      token: t.access_token,
-      signingKey: t.signing_key,
-      workflow: "identity-verification",
-      countryCode: cfg.countryCode,
-      locale: "EN",
-
-      workflowConfigs: {
-        identityVerification: {
-          skipFaceMatch: true,
-          userConsent: { obtained: true, obtainedAt: Date.now() },
-
-          docVerification: {
-            skipIntroductionScreen: false,
-            skipDocSelectionScreen: false,
-            skipTutorialScreen: false
-          }
-        }
-      },
-
-      onComplete: showPass,
-      onError: showFail
-    });
+    VidaSDK.init(baseConfig(t, "identity-verification", identityConfig(false)));
   }
 
   async function startFullVerification() {
-    clearResult();
+    result.textContent = "";
     const t = await fetchToken();
-    const cfg = getCountryConfig();
-
-    VidaSDK.init({
-      token: t.access_token,
-      signingKey: t.signing_key,
-      workflow: "identity-verification",
-      countryCode: cfg.countryCode,
-      locale: "EN",
-
-      workflowConfigs: {
-        identityVerification: {
-          userConsent: { obtained: true, obtainedAt: Date.now() },
-
-          docVerification: {
-            skipIntroductionScreen: false,
-            skipDocSelectionScreen: false,
-            skipTutorialScreen: false
-          },
-
-          faceMatch: {}
-        }
-      },
-
-      onComplete: showPass,
-      onError: showFail
-    });
+    VidaSDK.init(baseConfig(t, "identity-verification", identityConfig(true)));
   }
 
   async function startLivenessOnly() {
-    clearResult();
+    result.textContent = "";
     const t = await fetchToken();
-
-    const container = document.getElementById("sdk-container");
-    container.style.display = "block";
+    sdk-container.style.display = "block";
 
     VidaSDK.init({
       token: t.access_token,
@@ -262,10 +182,8 @@
       workflow: "liveness",
       elementId: "sdk-container",
       locale: "EN",
-      partnerTransactionId: crypto.randomUUID(),
-
-      onComplete: showPass,
-      onError: showFail
+      onComplete: d => result.textContent = JSON.stringify(d, null, 2),
+      onError: e => result.textContent = JSON.stringify(e, null, 2)
     });
   }
 </script>
