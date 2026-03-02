@@ -39,15 +39,8 @@
       box-shadow: 0 10px 24px rgba(0,0,0,0.08);
     }
 
-    h1 {
-      font-size: 22px;
-      margin-bottom: 16px;
-    }
-
-    h2 {
-      font-size: 16px;
-      margin-bottom: 12px;
-    }
+    h1 { font-size: 22px; margin-bottom: 16px; }
+    h2 { font-size: 16px; margin-bottom: 12px; }
 
     button {
       width: 100%;
@@ -106,6 +99,16 @@
       font-size: 12px;
       white-space: pre-wrap;
     }
+
+    #sdk-container {
+      width: 100%;
+      height: 520px;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+      margin-top: 16px;
+      border: 1px solid #e5e7eb;
+    }
   </style>
 </head>
 
@@ -143,13 +146,11 @@
       <summary>View Full API Response</summary>
       <pre id="api-response-json"></pre>
     </details>
+
+    <!-- VISIBLE SDK CONTAINER (required for Liveness) -->
+    <div id="sdk-container"></div>
   </div>
 
-</div>
-
-<!-- Hidden SDK container -->
-<div id="sdk-container"
-     style="position:fixed;width:1px;height:1px;top:-9999px;left:-9999px;">
 </div>
 
 <script>
@@ -159,6 +160,8 @@
     document.getElementById("transaction-details").style.display = "none";
     document.getElementById("transaction-details").innerHTML = "";
     document.getElementById("api-response").style.display = "none";
+    document.getElementById("sdk-container").style.display = "none";
+    document.getElementById("sdk-container").innerHTML = "";
   }
 
   async function fetchToken() {
@@ -181,23 +184,13 @@
       "result-status result-pass";
     document.getElementById("result-status").textContent = "PASSED";
 
-    const livenessScore = extractLivenessScore(data);
+    const score = extractLivenessScore(data);
 
     document.getElementById("transaction-details").style.display = "block";
     document.getElementById("transaction-details").innerHTML = `
-      <div class="transaction-item">
-        <b>Transaction ID:</b> ${data.partnerTransactionId || "-"}
-      </div>
-      <div class="transaction-item">
-        <b>Completed At:</b> ${new Date().toLocaleString()}
-      </div>
-      ${
-        livenessScore !== "-"
-          ? `<div class="transaction-item">
-               <b>Liveness Confidence:</b> ${livenessScore}
-             </div>`
-          : ""
-      }
+      <div class="transaction-item"><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
+      <div class="transaction-item"><b>Completed At:</b> ${new Date().toLocaleString()}</div>
+      ${score !== "-" ? `<div class="transaction-item"><b>Liveness Confidence:</b> ${score}</div>` : ""}
     `;
 
     document.getElementById("api-response-json").textContent =
@@ -209,12 +202,9 @@
     document.getElementById("result-status").className =
       "result-status result-fail";
     document.getElementById("result-status").textContent = "NOT PASSED";
-    console.error("SDK Error:", error);
+    console.error(error);
   }
 
-  /* ===============================
-     DOCUMENT VERIFICATION ONLY
-     =============================== */
   async function startDocumentOnly() {
     clearResult();
     const t = await fetchToken();
@@ -222,30 +212,21 @@
     VidaSDK.init({
       token: t.access_token,
       signingKey: t.signing_key,
-      elementId: "sdk-container",
       workflow: "identity-verification",
       countryCode: "IDN",
       locale: "EN",
-
       workflowConfigs: {
         identityVerification: {
           skipFaceMatch: true,
           userConsent: { obtained: true, obtainedAt: Date.now() },
-          docVerification: {
-            maxRetryAttempts: 3,
-            skipDocBackSideCapture: true
-          }
+          docVerification: { skipDocBackSideCapture: true }
         }
       },
-
       onComplete: showPassResult,
       onError: showFailResult
     });
   }
 
-  /* ===============================
-     FULL VERIFICATION
-     =============================== */
   async function startFullVerification() {
     clearResult();
     const t = await fetchToken();
@@ -253,33 +234,27 @@
     VidaSDK.init({
       token: t.access_token,
       signingKey: t.signing_key,
-      elementId: "sdk-container",
       workflow: "identity-verification",
       countryCode: "IDN",
       locale: "EN",
-
       workflowConfigs: {
         identityVerification: {
           userConsent: { obtained: true, obtainedAt: Date.now() },
-          docVerification: {
-            maxRetryAttempts: 3,
-            skipDocBackSideCapture: true
-          },
+          docVerification: { skipDocBackSideCapture: true },
           faceMatch: {}
         }
       },
-
       onComplete: showPassResult,
       onError: showFailResult
     });
   }
 
-  /* ===============================
-     LIVENESS ONLY
-     =============================== */
   async function startLivenessOnly() {
     clearResult();
     const t = await fetchToken();
+
+    const container = document.getElementById("sdk-container");
+    container.style.display = "block";
 
     VidaSDK.init({
       token: t.access_token,
@@ -292,19 +267,19 @@
       workflowConfigs: {
         liveness: {
           maxRetryAttempts: 4,
-          detectionTimeOut: 120000,
-          cameraFrameShape: "OVAL"
+          detectionTimeOut: 120000
         }
       },
 
-      themeConfigs: {
-        primaryButtonBgColor: "#059669",
-        primaryButtonTextColor: "#ffffff",
-        titleTextColor: "#1f2937"
+      onComplete: (data) => {
+        container.style.display = "none";
+        showPassResult(data);
       },
 
-      onComplete: showPassResult,
-      onError: showFailResult
+      onError: (error) => {
+        container.style.display = "none";
+        showFailResult(error);
+      }
     });
   }
 </script>
