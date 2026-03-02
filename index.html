@@ -78,8 +78,6 @@
       margin-bottom: 16px;
     }
 
-    .transaction-item { margin-bottom: 8px; }
-
     details {
       border-radius: 10px;
       background: #0b1220;
@@ -123,11 +121,11 @@
     <h2>Verification Options</h2>
 
     <button class="btn-primary" onclick="startDocumentOnly()">
-      Document Verification Only
+      Document Verification Only (KTP)
     </button>
 
     <button class="btn-secondary" onclick="startFullVerification()">
-      Full Verification
+      Full Verification (KTP + Face)
     </button>
 
     <button class="btn-tertiary" onclick="startLivenessOnly()">
@@ -147,7 +145,6 @@
       <pre id="api-response-json"></pre>
     </details>
 
-    <!-- VISIBLE SDK CONTAINER (required for Liveness) -->
     <div id="sdk-container"></div>
   </div>
 
@@ -169,28 +166,15 @@
     return res.json();
   }
 
-  function extractLivenessScore(data) {
-    return (
-      data?.livenessScore ??
-      data?.score ??
-      data?.confidence ??
-      data?.result?.confidence ??
-      "-"
-    );
-  }
-
   function showPassResult(data) {
     document.getElementById("result-status").className =
       "result-status result-pass";
     document.getElementById("result-status").textContent = "PASSED";
 
-    const score = extractLivenessScore(data);
-
     document.getElementById("transaction-details").style.display = "block";
     document.getElementById("transaction-details").innerHTML = `
-      <div class="transaction-item"><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
-      <div class="transaction-item"><b>Completed At:</b> ${new Date().toLocaleString()}</div>
-      ${score !== "-" ? `<div class="transaction-item"><b>Liveness Confidence:</b> ${score}</div>` : ""}
+      <div><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
+      <div><b>Completed At:</b> ${new Date().toLocaleString()}</div>
     `;
 
     document.getElementById("api-response-json").textContent =
@@ -215,13 +199,22 @@
       workflow: "identity-verification",
       countryCode: "IDN",
       locale: "EN",
+
       workflowConfigs: {
         identityVerification: {
+          documentType: "KTP",
           skipFaceMatch: true,
           userConsent: { obtained: true, obtainedAt: Date.now() },
-          docVerification: { skipDocBackSideCapture: true }
+
+          docVerification: {
+            skipIntroductionScreen: true,
+            skipDocSelectionScreen: true,
+            skipTutorialScreen: true,
+            skipDocBackSideCapture: true
+          }
         }
       },
+
       onComplete: showPassResult,
       onError: showFailResult
     });
@@ -237,13 +230,25 @@
       workflow: "identity-verification",
       countryCode: "IDN",
       locale: "EN",
+
       workflowConfigs: {
         identityVerification: {
+          documentType: "KTP",
           userConsent: { obtained: true, obtainedAt: Date.now() },
-          docVerification: { skipDocBackSideCapture: true },
-          faceMatch: {}
+
+          docVerification: {
+            skipIntroductionScreen: true,
+            skipDocSelectionScreen: true,
+            skipTutorialScreen: true,
+            skipDocBackSideCapture: true
+          },
+
+          faceMatch: {
+            skipTutorialScreen: true
+          }
         }
       },
+
       onComplete: showPassResult,
       onError: showFailResult
     });
