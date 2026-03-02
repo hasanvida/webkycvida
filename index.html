@@ -41,12 +41,12 @@
 
     h1 {
       font-size: 22px;
-      margin: 0 0 16px;
+      margin-bottom: 16px;
     }
 
     h2 {
       font-size: 16px;
-      margin: 0 0 12px;
+      margin-bottom: 12px;
     }
 
     button {
@@ -60,15 +60,9 @@
       margin-bottom: 12px;
     }
 
-    .btn-primary {
-      background: #0d6efd;
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background: #111827;
-      color: #fff;
-    }
+    .btn-primary { background: #0d6efd; color: #fff; }
+    .btn-secondary { background: #111827; color: #fff; }
+    .btn-tertiary { background: #059669; color: #fff; }
 
     .result-status {
       padding: 20px;
@@ -79,15 +73,8 @@
       margin-bottom: 16px;
     }
 
-    .result-pass {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .result-fail {
-      background: #fee2e2;
-      color: #991b1b;
-    }
+    .result-pass { background: #dcfce7; color: #166534; }
+    .result-fail { background: #fee2e2; color: #991b1b; }
 
     .transaction-details {
       padding: 16px;
@@ -98,9 +85,7 @@
       margin-bottom: 16px;
     }
 
-    .transaction-item {
-      margin-bottom: 8px;
-    }
+    .transaction-item { margin-bottom: 8px; }
 
     details {
       border-radius: 10px;
@@ -141,6 +126,10 @@
     <button class="btn-secondary" onclick="startFullVerification()">
       Full Verification
     </button>
+
+    <button class="btn-tertiary" onclick="startLivenessOnly()">
+      Liveness Only
+    </button>
   </div>
 
   <!-- RIGHT -->
@@ -160,7 +149,8 @@
 
 <!-- Hidden SDK container -->
 <div id="sdk-container"
-  style="position:fixed;width:1px;height:1px;top:-9999px;left:-9999px;"></div>
+     style="position:fixed;width:1px;height:1px;top:-9999px;left:-9999px;">
+</div>
 
 <script>
   function clearResult() {
@@ -176,14 +166,38 @@
     return res.json();
   }
 
+  function extractLivenessScore(data) {
+    return (
+      data?.livenessScore ??
+      data?.score ??
+      data?.confidence ??
+      data?.result?.confidence ??
+      "-"
+    );
+  }
+
   function showPassResult(data) {
-    document.getElementById("result-status").className = "result-status result-pass";
+    document.getElementById("result-status").className =
+      "result-status result-pass";
     document.getElementById("result-status").textContent = "PASSED";
+
+    const livenessScore = extractLivenessScore(data);
 
     document.getElementById("transaction-details").style.display = "block";
     document.getElementById("transaction-details").innerHTML = `
-      <div class="transaction-item"><b>Transaction ID:</b> ${data.partnerTransactionId || "-"}</div>
-      <div class="transaction-item"><b>Completed At:</b> ${new Date().toLocaleString()}</div>
+      <div class="transaction-item">
+        <b>Transaction ID:</b> ${data.partnerTransactionId || "-"}
+      </div>
+      <div class="transaction-item">
+        <b>Completed At:</b> ${new Date().toLocaleString()}
+      </div>
+      ${
+        livenessScore !== "-"
+          ? `<div class="transaction-item">
+               <b>Liveness Confidence:</b> ${livenessScore}
+             </div>`
+          : ""
+      }
     `;
 
     document.getElementById("api-response-json").textContent =
@@ -191,11 +205,16 @@
     document.getElementById("api-response").style.display = "block";
   }
 
-  function showFailResult(err) {
-    document.getElementById("result-status").className = "result-status result-fail";
+  function showFailResult(error) {
+    document.getElementById("result-status").className =
+      "result-status result-fail";
     document.getElementById("result-status").textContent = "NOT PASSED";
+    console.error("SDK Error:", error);
   }
 
+  /* ===============================
+     DOCUMENT VERIFICATION ONLY
+     =============================== */
   async function startDocumentOnly() {
     clearResult();
     const t = await fetchToken();
@@ -214,10 +233,7 @@
           userConsent: { obtained: true, obtainedAt: Date.now() },
           docVerification: {
             maxRetryAttempts: 3,
-            skipDocBackSideCapture: true,
-            hideDescriptions: {
-              documentPreview: false
-            }
+            skipDocBackSideCapture: true
           }
         }
       },
@@ -227,6 +243,9 @@
     });
   }
 
+  /* ===============================
+     FULL VERIFICATION
+     =============================== */
   async function startFullVerification() {
     clearResult();
     const t = await fetchToken();
@@ -244,13 +263,44 @@
           userConsent: { obtained: true, obtainedAt: Date.now() },
           docVerification: {
             maxRetryAttempts: 3,
-            skipDocBackSideCapture: true,
-            hideDescriptions: {
-              documentPreview: false
-            }
+            skipDocBackSideCapture: true
           },
           faceMatch: {}
         }
+      },
+
+      onComplete: showPassResult,
+      onError: showFailResult
+    });
+  }
+
+  /* ===============================
+     LIVENESS ONLY
+     =============================== */
+  async function startLivenessOnly() {
+    clearResult();
+    const t = await fetchToken();
+
+    VidaSDK.init({
+      token: t.access_token,
+      signingKey: t.signing_key,
+      elementId: "sdk-container",
+      workflow: "liveness",
+      locale: "EN",
+      partnerTransactionId: crypto.randomUUID(),
+
+      workflowConfigs: {
+        liveness: {
+          maxRetryAttempts: 4,
+          detectionTimeOut: 120000,
+          cameraFrameShape: "OVAL"
+        }
+      },
+
+      themeConfigs: {
+        primaryButtonBgColor: "#059669",
+        primaryButtonTextColor: "#ffffff",
+        titleTextColor: "#1f2937"
       },
 
       onComplete: showPassResult,
