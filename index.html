@@ -35,6 +35,10 @@
       align-items: center;
     }
 
+    .header-logo {
+      max-height: 40px; /* Adjust height as needed */
+    }
+
     .container {
       max-width: 1100px;
       margin: 2rem auto;
@@ -100,19 +104,10 @@
       cursor: pointer;
       display: flex;
       justify-content: space-between;
+      color: var(--text-main);
     }
 
     button.btn-action:hover { border-color: var(--primary); color: var(--primary); }
-
-    .btn-primary-action {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
 
     /* Output Areas */
     #sdk-container {
@@ -139,7 +134,7 @@
 <body>
 
 <header>
-  <div style="font-weight: 700;">VIDA <span style="font-weight: 300; opacity: 0.8;">Demo Portal</span></div>
+  <img src="vida_logo_url_here.png" alt="VIDA" class="header-logo"> 
 </header>
 
 <div class="container">
@@ -154,7 +149,7 @@
       <h3>Workflows</h3>
       <div class="button-stack">
         <button class="btn-action" onclick="startDocumentOnly()">Document Only</button>
-        <button class="btn-primary-action" onclick="startFullVerification()">Full Verification</button>
+        <button class="btn-action" onclick="startFullVerification()">Full Verification</button> 
         <button class="btn-action" onclick="startLivenessOnly()">Liveness Only</button>
       </div>
     </div>
@@ -220,8 +215,8 @@
     };
   }
 
-  async function startDocumentOnly() {
-    result.textContent = "Initializing Document Capture...";
+  async function startWorkflow(workflowType, isFull) {
+    result.textContent = `Initializing ${workflowType}...`;
     try {
       const t = await fetchToken();
       VidaSDK.init({
@@ -229,28 +224,15 @@
         signingKey: t.signing_key,
         workflow: "identity-verification",
         locale: "EN",
-        ...getIdentityConfig(false),
+        ...getIdentityConfig(isFull),
         onComplete: showResult,
         onError: showResult
       });
     } catch (e) { result.textContent = "Error: " + e.message; }
   }
 
-  async function startFullVerification() {
-    result.textContent = "Initializing Full Verification...";
-    try {
-      const t = await fetchToken();
-      VidaSDK.init({
-        token: t.access_token,
-        signingKey: t.signing_key,
-        workflow: "identity-verification",
-        locale: "EN",
-        ...getIdentityConfig(true),
-        onComplete: showResult,
-        onError: showResult
-      });
-    } catch (e) { result.textContent = "Error: " + e.message; }
-  }
+  function startDocumentOnly() { startWorkflow("Document Capture", false); }
+  function startFullVerification() { startWorkflow("Full Verification", true); }
 
   async function startLivenessOnly() {
     result.style.display = "none";
