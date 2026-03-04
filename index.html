@@ -1,312 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>VIDA eKYC | Enterprise Demo</title>
-  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<title>VIDA eKYC Verification Demo</title>
 
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --bg-body: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --success: #10b981;
-      --dark: #0f172a;
-    }
+<script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
 
-    body {
-      margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    /* Header Styling */
-    header {
-      background: var(--dark);
-      color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+<style>
 
-    .logo-text {
-      font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: -0.5px;
-    }
+*{
+box-sizing:border-box;
+}
 
-    .status-badge {
-      font-size: 0.75rem;
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      padding: 4px 12px;
-      border-radius: 99px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
+body{
+margin:0;
+font-family: "Inter","Segoe UI", Arial, sans-serif;
+background:#f5f7fb;
+color:#1f2937;
+}
 
-    .container {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-      display: grid;
-      grid-template-columns: 350px 1fr;
-      gap: 2rem;
-    }
+header{
+background:#0f172a;
+color:white;
+padding:18px 28px;
+font-size:18px;
+font-weight:600;
+letter-spacing:.3px;
+}
 
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+.container{
+max-width:1200px;
+margin:auto;
+padding:30px 20px;
+}
 
-    h3 {
-      margin-top: 0;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 1.25rem;
-    }
+.layout{
+display:grid;
+grid-template-columns:340px 1fr;
+gap:24px;
+}
 
-    /* Button Grouping */
-    .button-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
+.card{
+background:white;
+border-radius:14px;
+padding:24px;
+box-shadow:0 6px 20px rgba(0,0,0,0.06);
+}
 
-    .country-toggle {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      background: #f1f5f9;
-      padding: 4px;
-      border-radius: 8px;
-      margin-bottom: 2rem;
-    }
+.section-title{
+font-size:14px;
+font-weight:600;
+margin-bottom:12px;
+color:#6b7280;
+text-transform:uppercase;
+letter-spacing:.5px;
+}
 
-    button {
-      font-family: inherit;
-      font-size: 0.9rem;
-      font-weight: 500;
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+.country-toggle{
+display:flex;
+gap:10px;
+margin-bottom:24px;
+}
 
-    .btn-toggle {
-      background: transparent;
-      color: var(--text-muted);
-    }
+button{
+border:none;
+border-radius:10px;
+padding:13px;
+font-size:14px;
+font-weight:600;
+cursor:pointer;
+transition:all .2s;
+width:100%;
+}
 
-    .btn-toggle.active {
-      background: white;
-      color: var(--primary);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      border-color: var(--border);
-    }
+button:hover{
+transform:translateY(-1px);
+}
 
-    .btn-action {
-      background: white;
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      text-align: left;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+.btn-primary{
+background:#2563eb;
+color:white;
+}
 
-    .btn-action:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: #eff6ff;
-    }
+.btn-secondary{
+background:#111827;
+color:white;
+}
 
-    .btn-action::after {
-      content: '→';
-      opacity: 0.5;
-    }
+.btn-tertiary{
+background:#059669;
+color:white;
+}
 
-    .btn-primary-action {
-      background: var(--primary);
-      color: white;
-    }
+.btn-outline{
+background:#f3f4f6;
+}
 
-    .btn-primary-action:hover {
-      background: var(--primary-hover);
-    }
+.verify-buttons button{
+margin-bottom:12px;
+}
 
-    /* Right Panel Viewports */
-    #sdk-container {
-      height: 600px;
-      display: none;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      margin-top: 1rem;
-    }
+.result-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
 
-    .output-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
+.badge{
+background:#e5e7eb;
+padding:4px 10px;
+border-radius:20px;
+font-size:12px;
+}
 
-    pre {
-      background: #1e293b;
-      color: #cbd5e1;
-      padding: 1.5rem;
-      border-radius: 8px;
-      font-family: 'Fira Code', monospace;
-      font-size: 13px;
-      line-height: 1.5;
-      overflow-x: auto;
-      min-height: 200px;
-    }
+pre{
+background:#0b1220;
+color:#d1d5db;
+padding:16px;
+border-radius:10px;
+font-size:12px;
+overflow:auto;
+height:200px;
+}
 
-    .placeholder-text {
-      color: var(--text-muted);
-      font-style: italic;
-      text-align: center;
-      padding-top: 3rem;
-    }
+#sdk-container{
+margin-top:16px;
+height:520px;
+border-radius:12px;
+overflow:hidden;
+border:1px solid #e5e7eb;
+display:none;
+}
 
-    @media (max-width: 850px) {
-      .container { grid-template-columns: 1fr; }
-    }
-  </style>
+.footer{
+margin-top:20px;
+font-size:12px;
+color:#9ca3af;
+text-align:center;
+}
+
+@media(max-width:900px){
+
+.layout{
+grid-template-columns:1fr;
+}
+
+}
+
+</style>
 </head>
 
 <body>
 
 <header>
-  <div class="logo-text">VIDA <span style="font-weight:300; opacity: 0.7;">Identity</span></div>
-  <div class="status-badge">Sandbox Environment</div>
+VIDA eKYC Web SDK Demo
 </header>
 
 <div class="container">
 
-  <aside>
-    <div class="card">
-      <h3>Target Region</h3>
-      <div class="country-toggle">
-        <button id="btn-id" class="btn-toggle active" onclick="setCountry('ID')">Indonesia</button>
-        <button id="btn-my" class="btn-toggle" onclick="setCountry('MY')">Malaysia</button>
-      </div>
+<div class="layout">
 
-      <h3>Workflows</h3>
-      <div class="button-stack">
-        <button class="btn-action" onclick="startDocumentOnly()">Document Capture</button>
-        <button class="btn-primary-action" onclick="startFullVerification()">Full eKYC Flow</button>
-        <button class="btn-action" onclick="startLivenessOnly()">Liveness Check</button>
-      </div>
-    </div>
-  </aside>
+<!-- LEFT PANEL -->
+<div class="card">
 
-  <main>
-    <div class="card">
-      <div class="output-header">
-        <h3>Console Output</h3>
-        <button onclick="location.reload()" style="font-size: 12px; padding: 4px 8px; background: none; color: var(--text-muted); border: 1px solid var(--border)">Reset</button>
-      </div>
-      
-      <div id="sdk-container"></div>
-      <pre id="result"><span class="placeholder-text">// Results will appear here after verification...</span></pre>
-    </div>
-  </main>
+<div class="section-title">Country</div>
+
+<div class="country-toggle">
+<button id="btn-id" class="btn-primary" onclick="setCountry('ID')">
+Indonesia 🇮🇩
+</button>
+
+<button id="btn-my" class="btn-outline" onclick="setCountry('MY')">
+Malaysia 🇲🇾
+</button>
+</div>
+
+
+<div class="section-title">Verification Type</div>
+
+<div class="verify-buttons">
+
+<button class="btn-primary" onclick="startDocumentOnly()">
+Document Verification
+</button>
+
+<button class="btn-secondary" onclick="startFullVerification()">
+Full eKYC (Document + Face Match)
+</button>
+
+<button class="btn-tertiary" onclick="startLivenessOnly()">
+Liveness Only
+</button>
+
+</div>
+
+</div>
+
+
+<!-- RIGHT PANEL -->
+<div class="card">
+
+<div class="result-header">
+<h3>Verification Result</h3>
+<div class="badge" id="statusBadge">Idle</div>
+</div>
+
+<pre id="result"></pre>
+
+<div id="sdk-container"></div>
+
+</div>
+
+</div>
+
+<div class="footer">
+VIDA Identity Verification Sandbox Demo
+</div>
 
 </div>
 
 <script>
-  let selectedCountry = "ID";
-  const btnId = document.getElementById("btn-id");
-  const btnMy = document.getElementById("btn-my");
-  const result = document.getElementById("result");
-  const sdkContainer = document.getElementById("sdk-container");
 
-  function setCountry(country) {
-    selectedCountry = country;
-    btnId.classList.toggle("active", country === "ID");
-    btnMy.classList.toggle("active", country === "MY");
-  }
+let selectedCountry = "ID";
 
-  async function fetchToken() {
-    // Note: Ensure this endpoint is active in your Netlify env
-    const res = await fetch("/.netlify/functions/get-token");
-    return res.json();
-  }
+const btnId = document.getElementById("btn-id");
+const btnMy = document.getElementById("btn-my");
+const result = document.getElementById("result");
+const sdkContainer = document.getElementById("sdk-container");
+const statusBadge = document.getElementById("statusBadge");
 
-  function showResult(data) {
-    sdkContainer.style.display = "none";
-    result.style.display = "block";
-    result.innerHTML = JSON.stringify(data, null, 2);
-  }
+function setCountry(country){
 
-  function identityConfig(isFull) {
-    const isMY = selectedCountry === "MY";
-    return {
-      countryCode: isMY ? "MYS" : "IDN",
-      workflowConfigs: {
-        identityVerification: {
-          userConsent: { obtained: true, obtainedAt: Date.now() },
-          documentType: isMY ? ["MyKad", "MyPR", "MyTentera", "PASSPORT"] : undefined,
-          docVerification: { skipDocSelectionScreen: false, skipIntroductionScreen: false },
-          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
-        }
-      }
-    };
-  }
+selectedCountry = country;
 
-  async function startWorkflow(isFull) {
-    result.innerHTML = "Initializing SDK...";
-    try {
-      const t = await fetchToken();
-      VidaSDK.init({
-        token: t.access_token,
-        signingKey: t.signing_key,
-        workflow: "identity-verification",
-        locale: "EN",
-        ...identityConfig(isFull),
-        onComplete: showResult,
-        onError: showResult
-      });
-    } catch (e) {
-      result.innerHTML = "Error: Token fetch failed. Check console.";
-    }
-  }
+btnId.className = country === "ID" ? "btn-primary" : "btn-outline";
+btnMy.className = country === "MY" ? "btn-primary" : "btn-outline";
 
-  function startDocumentOnly() { startWorkflow(false); }
-  function startFullVerification() { startWorkflow(true); }
+}
 
-  async function startLivenessOnly() {
-    result.style.display = "none";
-    sdkContainer.style.display = "block";
-    const t = await fetchToken();
-    VidaSDK.init({
-      token: t.access_token,
-      signingKey: t.signing_key,
-      workflow: "liveness",
-      elementId: "sdk-container",
-      locale: "EN",
-      onComplete: showResult,
-      onError: showResult
-    });
-  }
+async function fetchToken(){
+
+statusBadge.textContent="Fetching Token";
+
+const res = await fetch("/.netlify/functions/get-token");
+return res.json();
+
+}
+
+function showResult(data){
+
+statusBadge.textContent="Completed";
+
+result.textContent = JSON.stringify(data,null,2);
+
+}
+
+function identityConfig(isFull){
+
+if(selectedCountry==="MY"){
+
+return{
+
+countryCode:"MYS",
+
+workflowConfigs:{
+identityVerification:{
+userConsent:{obtained:true,obtainedAt:Date.now()},
+
+documentType:["MyKad","MyPR","MyTentera","PASSPORT"],
+
+docVerification:{
+skipDocSelectionScreen:false,
+skipIntroductionScreen:false
+},
+
+...(isFull?{faceMatch:{}}:{skipFaceMatch:true})
+
+}
+}
+
+};
+
+}
+
+return{
+
+countryCode:"IDN",
+
+workflowConfigs:{
+identityVerification:{
+userConsent:{obtained:true,obtainedAt:Date.now()},
+
+docVerification:{
+skipDocSelectionScreen:false,
+skipIntroductionScreen:false
+},
+
+...(isFull?{faceMatch:{}}:{skipFaceMatch:true})
+
+}
+}
+
+};
+
+}
+
+async function startDocumentOnly(){
+
+result.textContent="";
+statusBadge.textContent="Starting";
+
+const t = await fetchToken();
+
+VidaSDK.init({
+
+token:t.access_token,
+signingKey:t.signing_key,
+
+workflow:"identity-verification",
+locale:"EN",
+
+...identityConfig(false),
+
+onComplete:showResult,
+onError:showResult
+
+});
+
+}
+
+async function startFullVerification(){
+
+result.textContent="";
+statusBadge.textContent="Starting";
+
+const t = await fetchToken();
+
+VidaSDK.init({
+
+token:t.access_token,
+signingKey:t.signing_key,
+
+workflow:"identity-verification",
+locale:"EN",
+
+...identityConfig(true),
+
+onComplete:showResult,
+onError:showResult
+
+});
+
+}
+
+async function startLivenessOnly(){
+
+result.textContent="";
+statusBadge.textContent="Starting";
+
+const t = await fetchToken();
+
+sdkContainer.style.display="block";
+
+VidaSDK.init({
+
+token:t.access_token,
+signingKey:t.signing_key,
+
+workflow:"liveness",
+elementId:"sdk-container",
+locale:"EN",
+
+onComplete:showResult,
+onError:showResult
+
+});
+
+}
+
 </script>
 
 </body>
