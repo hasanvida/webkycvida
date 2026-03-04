@@ -2,21 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VIDA eKYC | Enterprise Demo</title>
+  <title>VIDA eKYC | Enterprise Demo Portal</title>
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --bg-body: #f8fafc;
+      --primary: #00c37b; /* VIDA Green */
+      --primary-dark: #00a165;
+      --secondary: #011627; /* VIDA Navy */
+      --bg-body: #f4f7f9;
       --card-bg: #ffffff;
       --text-main: #1e293b;
       --text-muted: #64748b;
       --border: #e2e8f0;
-      --dark: #0f172a;
     }
 
     body {
@@ -24,54 +24,62 @@
       font-family: 'Inter', system-ui, sans-serif;
       background-color: var(--bg-body);
       color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
+    /* Professional Header */
     header {
-      background: var(--dark);
-      color: white;
-      padding: 1rem 2rem;
+      background: white;
+      padding: 0.75rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
 
     .header-logo {
-      max-height: 40px; /* Adjust height as needed */
+      height: 38px;
+      display: block;
     }
 
     .container {
       max-width: 1100px;
-      margin: 2rem auto;
+      margin: 2.5rem auto;
       padding: 0 1rem;
       display: grid;
       grid-template-columns: 320px 1fr;
       gap: 2rem;
+      flex-grow: 1;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     h3 {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
       color: var(--text-muted);
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
+      font-weight: 700;
     }
 
-    /* Country Toggle Fixes */
+    /* Country Toggle - Segmented UI */
     .country-toggle {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 4px;
       background: #f1f5f9;
       padding: 4px;
-      border-radius: 8px;
+      border-radius: 10px;
       margin-bottom: 2rem;
     }
 
@@ -79,54 +87,108 @@
       background: transparent;
       color: var(--text-muted);
       border: none;
-      padding: 8px;
-      border-radius: 6px;
+      padding: 10px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 0.85rem;
       transition: all 0.2s;
     }
 
     .btn-toggle.active {
       background: white;
-      color: var(--primary);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      color: var(--secondary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
-    /* Action Buttons */
-    .button-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+    /* Action Buttons - Unified Professional Look */
+    .button-stack { display: flex; flex-direction: column; gap: 0.8rem; }
     
     button.btn-action {
       text-align: left;
       background: white;
       border: 1px solid var(--border);
-      padding: 12px;
-      border-radius: 8px;
+      padding: 16px;
+      border-radius: 10px;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
-      color: var(--text-main);
+      align-items: center;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.2s;
     }
 
-    button.btn-action:hover { border-color: var(--primary); color: var(--primary); }
+    button.btn-action:hover { 
+      border-color: var(--primary); 
+      background-color: #f0fff9;
+      transform: translateY(-1px);
+    }
 
-    /* Output Areas */
+    button.btn-action::after {
+      content: '→';
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 400;
+    }
+
+    /* Output Section */
     #sdk-container {
-      height: 500px;
+      height: 520px;
       display: none;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       margin-bottom: 1rem;
+      background: #000;
+      overflow: hidden;
     }
 
     pre {
-      background: #0f172a;
+      background: var(--secondary);
       color: #94a3b8;
-      padding: 1rem;
-      border-radius: 8px;
+      padding: 1.5rem;
+      border-radius: 12px;
       font-size: 13px;
+      line-height: 1.6;
       overflow-x: auto;
-      min-height: 100px;
+      min-height: 150px;
       margin: 0;
+      border: 1px solid #1e293b;
+    }
+
+    /* Powered By Footer */
+    footer {
+      padding: 2.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      background: white;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+
+    .powered-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 50px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .powered-text {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .footer-logo {
+      height: 18px;
+    }
+
+    @media (max-width: 800px) {
+      .container { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -134,52 +196,60 @@
 <body>
 
 <header>
-  <img src="vida_logo_url_here.png" alt="VIDA" class="header-logo"> 
+  <img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="header-logo">
+  <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em;">IDENTITY VERIFICATION</div>
 </header>
 
 <div class="container">
   <aside>
     <div class="card">
-      <h3>Select Region</h3>
+      <h3>Regional Context</h3>
       <div class="country-toggle">
-        <button id="btn-id" class="btn-toggle active" onclick="setCountry('ID')">Indonesia 🇮🇩</button>
-        <button id="btn-my" class="btn-toggle" onclick="setCountry('MY')">Malaysia 🇲🇾</button>
+        <button id="btn-id" class="btn-toggle active" onclick="setCountry('ID')">Indonesia</button>
+        <button id="btn-my" class="btn-toggle" onclick="setCountry('MY')">Malaysia</button>
       </div>
 
-      <h3>Workflows</h3>
+      <h3>Available Workflows</h3>
       <div class="button-stack">
-        <button class="btn-action" onclick="startDocumentOnly()">Document Only</button>
+        <button class="btn-action" onclick="startDocumentOnly()">Document Capture</button>
         <button class="btn-action" onclick="startFullVerification()">Full Verification</button> 
-        <button class="btn-action" onclick="startLivenessOnly()">Liveness Only</button>
+        <button class="btn-action" onclick="startLivenessOnly()">Liveness Check</button>
       </div>
     </div>
   </aside>
 
   <main>
     <div class="card">
-      <h3>Execution Output</h3>
+      <h3>Developer Console</h3>
       <div id="sdk-container"></div>
-      <pre id="result">// Ready to start...</pre>
+      <pre id="result">// Ready to initiate secure session. Select a workflow.</pre>
     </div>
   </main>
 </div>
+
+<footer>
+  <div class="powered-container">
+    <span class="powered-text">Powered by</span>
+    <img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="footer-logo">
+  </div>
+  <p style="margin-top: 12px; opacity: 0.6;">&copy; 2024 Digital Identity Verification Demo</p>
+</footer>
 
 <script>
   let selectedCountry = "ID";
   const result = document.getElementById("result");
   const sdkContainer = document.getElementById("sdk-container");
 
-  // FIXED: Logic to switch country
   function setCountry(country) {
     selectedCountry = country;
     document.getElementById("btn-id").classList.toggle("active", country === 'ID');
     document.getElementById("btn-my").classList.toggle("active", country === 'MY');
-    result.textContent = `Switched to ${country === 'ID' ? 'Indonesia' : 'Malaysia'}`;
+    result.textContent = `// Context switched to: ${country === 'ID' ? 'IDN (Indonesia)' : 'MYS (Malaysia)'}`;
   }
 
   async function fetchToken() {
     const res = await fetch("/.netlify/functions/get-token");
-    if (!res.ok) throw new Error("Failed to fetch token");
+    if (!res.ok) throw new Error("Authentication failed. Check Netlify function.");
     return res.json();
   }
 
@@ -190,21 +260,9 @@
   }
 
   function getIdentityConfig(isFull) {
-    if (selectedCountry === "MY") {
-      return {
-        countryCode: "MYS",
-        workflowConfigs: {
-          identityVerification: {
-            userConsent: { obtained: true, obtainedAt: Date.now() },
-            documentType: ["MyKad", "MyPR", "MyTentera", "PASSPORT"],
-            docVerification: { skipDocSelectionScreen: false, skipIntroductionScreen: false },
-            ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
-          }
-        }
-      };
-    }
-    return {
-      countryCode: "IDN",
+    const isMY = selectedCountry === "MY";
+    const config = {
+      countryCode: isMY ? "MYS" : "IDN",
       workflowConfigs: {
         identityVerification: {
           userConsent: { obtained: true, obtainedAt: Date.now() },
@@ -213,26 +271,30 @@
         }
       }
     };
+    if (isMY) {
+      config.workflowConfigs.identityVerification.documentType = ["MyKad", "MyPR", "MyTentera", "PASSPORT"];
+    }
+    return config;
   }
 
-  async function startWorkflow(workflowType, isFull) {
-    result.textContent = `Initializing ${workflowType}...`;
+  async function initWorkflow(name, isFull) {
+    result.textContent = `// Initializing ${name}...`;
     try {
       const t = await fetchToken();
       VidaSDK.init({
         token: t.access_token,
-        signingKey: t.signing_key,
+        signing_key: t.signing_key,
         workflow: "identity-verification",
         locale: "EN",
         ...getIdentityConfig(isFull),
         onComplete: showResult,
         onError: showResult
       });
-    } catch (e) { result.textContent = "Error: " + e.message; }
+    } catch (e) { result.textContent = `// Runtime Error: ${e.message}`; }
   }
 
-  function startDocumentOnly() { startWorkflow("Document Capture", false); }
-  function startFullVerification() { startWorkflow("Full Verification", true); }
+  function startDocumentOnly() { initWorkflow("Document Capture", false); }
+  function startFullVerification() { initWorkflow("Full eKYC", true); }
 
   async function startLivenessOnly() {
     result.style.display = "none";
@@ -241,7 +303,7 @@
       const t = await fetchToken();
       VidaSDK.init({
         token: t.access_token,
-        signingKey: t.signing_key,
+        signing_key: t.signing_key,
         workflow: "liveness",
         elementId: "sdk-container",
         locale: "EN",
@@ -251,7 +313,7 @@
     } catch (e) { 
       sdkContainer.style.display = "none";
       result.style.display = "block";
-      result.textContent = "Error: " + e.message; 
+      result.textContent = `// Liveness Error: ${e.message}`; 
     }
   }
 </script>
