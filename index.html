@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+
 :root{
 --primary:#00c37b;
 --secondary:#011627;
@@ -54,7 +55,7 @@ box-shadow:0 4px 6px rgba(0,0,0,0.05);
 }
 
 h3{
-font-size:0.7rem;
+font-size:.7rem;
 text-transform:uppercase;
 letter-spacing:.1em;
 color:var(--text-muted);
@@ -122,17 +123,6 @@ margin-bottom:1rem;
 background:#000;
 }
 
-pre{
-background:var(--secondary);
-color:#94a3b8;
-padding:1.5rem;
-border-radius:12px;
-font-size:13px;
-overflow-x:auto;
-min-height:150px;
-margin:0;
-}
-
 .back-btn{
 display:none;
 margin-bottom:12px;
@@ -142,6 +132,29 @@ border:none;
 border-radius:8px;
 font-weight:600;
 cursor:pointer;
+}
+
+.dropdown{
+border:1px solid var(--border);
+border-radius:10px;
+margin-top:1rem;
+overflow:hidden;
+}
+
+.dropdown-header{
+padding:14px;
+cursor:pointer;
+background:#f8fafc;
+font-weight:600;
+}
+
+.dropdown-content{
+display:none;
+padding:16px;
+background:#011627;
+color:#94a3b8;
+font-size:13px;
+overflow-x:auto;
 }
 
 footer{
@@ -165,6 +178,7 @@ Enterprise eKYC Demo Portal
 <div class="container">
 
 <aside>
+
 <div class="card">
 
 <h3>Regional Context</h3>
@@ -183,6 +197,7 @@ Enterprise eKYC Demo Portal
 </div>
 
 </div>
+
 </aside>
 
 <main>
@@ -195,7 +210,21 @@ Enterprise eKYC Demo Portal
 
 <div id="sdk-container"></div>
 
-<pre id="result">// Ready. Select a workflow to begin.</pre>
+<!-- DOCUMENT OCR -->
+<div class="dropdown">
+<div class="dropdown-header" onclick="toggleDropdown('docResult')">
+Document Verification & OCR Result
+</div>
+<div id="docResult" class="dropdown-content"></div>
+</div>
+
+<!-- IDENTITY -->
+<div class="dropdown">
+<div class="dropdown-header" onclick="toggleDropdown('identityResult')">
+Identity Verification Result
+</div>
+<div id="identityResult" class="dropdown-content"></div>
+</div>
 
 </div>
 
@@ -210,10 +239,17 @@ Enterprise Demo Portal
 <script>
 
 let selectedCountry="ID"
+let currentFlow=""
 
-const result=document.getElementById("result")
 const sdkContainer=document.getElementById("sdk-container")
 const backBtn=document.getElementById("backBtn")
+
+function toggleDropdown(id){
+
+const el=document.getElementById(id)
+el.style.display=el.style.display==="block"?"none":"block"
+
+}
 
 function setCountry(country){
 
@@ -222,7 +258,22 @@ selectedCountry=country
 document.getElementById("btn-id").classList.toggle("active",country==="ID")
 document.getElementById("btn-my").classList.toggle("active",country==="MY")
 
-result.textContent=`// Switched to ${country}`
+}
+
+function resetSDK(){
+
+sdkContainer.innerHTML=""
+sdkContainer.style.display="none"
+backBtn.style.display="none"
+
+}
+
+function goHome(){
+
+resetSDK()
+
+document.getElementById("docResult").innerHTML=""
+document.getElementById("identityResult").innerHTML=""
 
 }
 
@@ -236,28 +287,22 @@ return await res.json()
 
 }
 
-function resetSDK(){
-
-sdkContainer.innerHTML=""
-sdkContainer.style.display="none"
-result.style.display="block"
-backBtn.style.display="none"
-
-}
-
-function goHome(){
-
-resetSDK()
-
-result.textContent="// Ready. Select a workflow to begin."
-
-}
-
 function handleOutput(data){
 
 sdkContainer.style.display="none"
-result.style.display="block"
-result.textContent=JSON.stringify(data,null,2)
+
+const formatted=JSON.stringify(data,null,2)
+
+if(currentFlow==="doc"){
+
+document.getElementById("docResult").textContent=formatted
+
+}
+else{
+
+document.getElementById("identityResult").textContent=formatted
+
+}
 
 }
 
@@ -286,6 +331,7 @@ skipIntroductionScreen:false
 
 ...(isMY?{documentType:["MyKad","MyPR","MyTentera","PASSPORT"]}:{})
 }
+
 }
 
 }
@@ -296,7 +342,8 @@ async function start(isFull){
 
 resetSDK()
 
-result.style.display="none"
+currentFlow=isFull?"identity":"doc"
+
 sdkContainer.style.display="block"
 backBtn.style.display="inline-block"
 
@@ -304,7 +351,7 @@ try{
 
 const t=await fetchToken()
 
-const sdkParams={
+VidaSDK.init({
 
 token:t.access_token,
 signingKey:t.signing_key||t.signingKey,
@@ -317,18 +364,13 @@ locale:"EN",
 onComplete:handleOutput,
 onError:handleOutput
 
-}
-
-console.log("SDK INIT:",sdkParams)
-
-VidaSDK.init(sdkParams)
+})
 
 }
 
 catch(e){
 
-goHome()
-result.textContent="// Error: "+e.message
+alert(e.message)
 
 }
 
@@ -342,7 +384,8 @@ async function startLivenessOnly(){
 
 resetSDK()
 
-result.style.display="none"
+currentFlow="identity"
+
 sdkContainer.style.display="block"
 backBtn.style.display="inline-block"
 
@@ -367,8 +410,7 @@ onError:handleOutput
 
 catch(e){
 
-goHome()
-result.textContent="// Error: "+e.message
+alert(e.message)
 
 }
 
