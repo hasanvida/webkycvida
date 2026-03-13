@@ -1,421 +1,289 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<title>Enterprise eKYC Demo Portal</title>
-<script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-
-:root{
---primary:#00c37b;
---secondary:#011627;
---bg-body:#f4f7f9;
---card-bg:#ffffff;
---text-main:#1e293b;
---text-muted:#64748b;
---border:#e2e8f0;
+:root {
+      --primary: #00c37b; /* VIDA Green */
+      --primary-dark: #00a165;
+      --secondary: #011627; /* VIDA Navy */
+      --primary: #00c37b; 
+      --secondary: #011627; 
+--bg-body: #f4f7f9;
+--card-bg: #ffffff;
+--text-main: #1e293b;
+@@ -29,21 +28,16 @@
+min-height: 100vh;
 }
 
-body{
-margin:0;
-font-family:'Inter',system-ui,sans-serif;
-background:var(--bg-body);
-color:var(--text-main);
-display:flex;
-flex-direction:column;
-min-height:100vh;
+    /* Professional Header */
+header {
+background: white;
+padding: 0.75rem 2rem;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-header{
-background:white;
-padding:1rem 2rem;
-border-bottom:1px solid var(--border);
-font-weight:600;
+    .header-logo {
+      height: 38px;
+      display: block;
+    }
+    .header-logo { height: 38px; display: block; }
+
+.container {
+max-width: 1100px;
+@@ -72,7 +66,6 @@
+font-weight: 700;
 }
 
-.container{
-max-width:1100px;
-margin:2rem auto;
-padding:0 1rem;
-display:grid;
-grid-template-columns:320px 1fr;
-gap:2rem;
-flex-grow:1;
+    /* Country Toggle - Segmented UI */
+.country-toggle {
+display: grid;
+grid-template-columns: 1fr 1fr;
+@@ -91,8 +84,6 @@
+border-radius: 8px;
+cursor: pointer;
+font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
 }
 
-.card{
-background:var(--card-bg);
-border:1px solid var(--border);
-border-radius:16px;
-padding:1.75rem;
-box-shadow:0 4px 6px rgba(0,0,0,0.05);
+.btn-toggle.active {
+@@ -101,7 +92,6 @@
+box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-h3{
-font-size:.7rem;
-text-transform:uppercase;
-letter-spacing:.1em;
-color:var(--text-muted);
-margin-bottom:1.25rem;
-font-weight:700;
+    /* Action Buttons - Unified Professional Look */
+.button-stack { display: flex; flex-direction: column; gap: 0.8rem; }
+
+button.btn-action {
+@@ -116,32 +106,21 @@
+align-items: center;
+color: var(--secondary);
+font-weight: 600;
+      font-family: inherit;
+transition: all 0.2s;
 }
 
-.country-toggle{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:4px;
-background:#f1f5f9;
-padding:4px;
-border-radius:10px;
-margin-bottom:2rem;
+button.btn-action:hover { 
+border-color: var(--primary); 
+background-color: #f0fff9;
+      transform: translateY(-1px);
 }
 
-.btn-toggle{
-background:transparent;
-border:none;
-padding:10px;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-color:var(--text-muted);
+    button.btn-action::after {
+      content: '→';
+      color: var(--primary);
+      font-size: 1.2rem;
+      font-weight: 400;
+    }
+
+    /* Output Section */
+#sdk-container {
+height: 520px;
+display: none;
+border: 1px solid var(--border);
+border-radius: 12px;
+margin-bottom: 1rem;
+background: #000;
+      overflow: hidden;
 }
 
-.btn-toggle.active{
-background:white;
-color:var(--secondary);
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+pre {
+@@ -150,22 +129,16 @@
+padding: 1.5rem;
+border-radius: 12px;
+font-size: 13px;
+      line-height: 1.6;
+overflow-x: auto;
+min-height: 150px;
+margin: 0;
+      border: 1px solid #1e293b;
 }
 
-.button-stack{
-display:flex;
-flex-direction:column;
-gap:.8rem;
+    /* Powered By Footer */
+footer {
+padding: 2.5rem;
+text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+background: white;
+border-top: 1px solid var(--border);
+      margin-top: 3rem;
 }
 
-button.btn-action{
-text-align:left;
-background:white;
-border:1px solid var(--border);
-padding:16px;
-border-radius:10px;
-cursor:pointer;
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-weight:600;
-color:var(--secondary);
+.powered-container {
+@@ -178,26 +151,14 @@
+border: 1px solid var(--border);
 }
 
-button.btn-action:hover{
-border-color:var(--primary);
-background:#f0fff9;
-}
+    .powered-text {
+      font-weight: 500;
+      color: var(--text-muted);
+    }
 
-#sdk-container{
-height:520px;
-display:none;
-border:1px solid var(--border);
-border-radius:12px;
-margin-bottom:1rem;
-background:#000;
-}
+    .footer-logo {
+      height: 18px;
+    }
 
-.back-btn{
-display:none;
-margin-bottom:12px;
-padding:10px 16px;
-background:var(--primary);
-border:none;
-border-radius:8px;
-font-weight:600;
-cursor:pointer;
-}
-
-.dropdown{
-border:1px solid var(--border);
-border-radius:10px;
-margin-top:1rem;
-overflow:hidden;
-}
-
-.dropdown-header{
-padding:14px;
-cursor:pointer;
-background:#f8fafc;
-font-weight:600;
-}
-
-.dropdown-content{
-display:none;
-padding:16px;
-background:#011627;
-color:#94a3b8;
-font-size:13px;
-overflow-x:auto;
-}
-
-footer{
-padding:2rem;
-text-align:center;
-border-top:1px solid var(--border);
-background:white;
-font-size:13px;
-color:#64748b;
-}
-
+    @media (max-width: 800px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .footer-logo { height: 18px; }
 </style>
 </head>
 
 <body>
 
 <header>
-Enterprise eKYC Demo Portal
+<img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="header-logo">
+  <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em;">IDENTITY VERIFICATION</div>
 </header>
 
 <div class="container">
-
-<aside>
-
-<div class="card">
-
-<h3>Regional Context</h3>
-
-<div class="country-toggle">
-<button id="btn-id" class="btn-toggle active" onclick="setCountry('ID')">Indonesia</button>
+@@ -209,7 +170,7 @@ <h3>Regional Context</h3>
 <button id="btn-my" class="btn-toggle" onclick="setCountry('MY')">Malaysia</button>
 </div>
 
-<h3>Workflows</h3>
-
+      <h3>Available Workflows</h3>
+      <h3>Workflows</h3>
 <div class="button-stack">
 <button class="btn-action" onclick="startDocumentOnly()">Document Capture</button>
-<button class="btn-action" onclick="startFullVerification()">Full Verification</button>
-<button class="btn-action" onclick="startLivenessOnly()">Liveness Check</button>
-</div>
-
-</div>
-
-</aside>
-
-<main>
-
+<button class="btn-action" onclick="startFullVerification()">Full Verification</button> 
+@@ -222,17 +183,16 @@ <h3>Available Workflows</h3>
 <div class="card">
-
 <h3>Developer Console</h3>
-
-<button id="backBtn" class="back-btn" onclick="goHome()">⬅ Back</button>
-
 <div id="sdk-container"></div>
-
-<!-- DOCUMENT OCR -->
-<div class="dropdown">
-<div class="dropdown-header" onclick="toggleDropdown('docResult')">
-Document Verification & OCR Result
+      <pre id="result">// Ready to initiate secure session. Select a workflow.</pre>
+      <pre id="result">// Ready. Select a workflow to begin.</pre>
 </div>
-<div id="docResult" class="dropdown-content"></div>
-</div>
-
-<!-- IDENTITY -->
-<div class="dropdown">
-<div class="dropdown-header" onclick="toggleDropdown('identityResult')">
-Identity Verification Result
-</div>
-<div id="identityResult" class="dropdown-content"></div>
-</div>
-
-</div>
-
 </main>
-
 </div>
 
 <footer>
-Enterprise Demo Portal
+<div class="powered-container">
+    <span class="powered-text">Powered by</span>
+    <span style="font-size: 0.8rem; color: #64748b;">Powered by</span>
+<img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="footer-logo">
+</div>
+  <p style="margin-top: 12px; opacity: 0.6;">&copy; 2024 Digital Identity Verification Demo</p>
 </footer>
 
 <script>
-
-let selectedCountry="ID"
-let currentFlow=""
-
-const sdkContainer=document.getElementById("sdk-container")
-const backBtn=document.getElementById("backBtn")
-
-function toggleDropdown(id){
-
-const el=document.getElementById(id)
-el.style.display=el.style.display==="block"?"none":"block"
-
+@@ -244,57 +204,68 @@ <h3>Developer Console</h3>
+selectedCountry = country;
+document.getElementById("btn-id").classList.toggle("active", country === 'ID');
+document.getElementById("btn-my").classList.toggle("active", country === 'MY');
+    result.textContent = `// Context switched to: ${country === 'ID' ? 'IDN (Indonesia)' : 'MYS (Malaysia)'}`;
+    result.textContent = `// Switched to ${country}`;
 }
 
-function setCountry(country){
-
-selectedCountry=country
-
-document.getElementById("btn-id").classList.toggle("active",country==="ID")
-document.getElementById("btn-my").classList.toggle("active",country==="MY")
-
+async function fetchToken() {
+    const res = await fetch("/.netlify/functions/get-token");
+    if (!res.ok) throw new Error("Authentication failed. Check Netlify function.");
+    return res.json();
+    try {
+      const res = await fetch("/.netlify/functions/get-token");
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.error("Token fetch error:", e);
+      throw e;
+    }
 }
 
-function resetSDK(){
-
-sdkContainer.innerHTML=""
-sdkContainer.style.display="none"
-backBtn.style.display="none"
-
+  function showResult(data) {
+  function handleOutput(data) {
+sdkContainer.style.display = "none";
+result.style.display = "block";
+result.textContent = JSON.stringify(data, null, 2);
 }
 
-function goHome(){
-
-resetSDK()
-
-document.getElementById("docResult").innerHTML=""
-document.getElementById("identityResult").innerHTML=""
-
+  function getIdentityConfig(isFull) {
+  function getConfig(isFull) {
+const isMY = selectedCountry === "MY";
+    const config = {
+    return {
+countryCode: isMY ? "MYS" : "IDN",
+workflowConfigs: {
+identityVerification: {
+userConsent: { obtained: true, obtainedAt: Date.now() },
+docVerification: { skipDocSelectionScreen: false, skipIntroductionScreen: false },
+          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
+          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true }),
+          ...(isMY ? { documentType: ["MyKad", "MyPR", "MyTentera", "PASSPORT"] } : {})
+}
+}
+};
+    if (isMY) {
+      config.workflowConfigs.identityVerification.documentType = ["MyKad", "MyPR", "MyTentera", "PASSPORT"];
+    }
+    return config;
 }
 
-async function fetchToken(){
+  async function initWorkflow(name, isFull) {
+    result.textContent = `// Initializing ${name}...`;
+  // Unified Start Function
+  async function start(isFull) {
+    result.textContent = "// Fetching session token...";
+try {
+const t = await fetchToken();
+      VidaSDK.init({
+      
+      // FIXED: Used signingKey (camelCase) instead of signing_key
+      const sdkParams = {
+token: t.access_token,
+        signing_key: t.signing_key,
+        signingKey: t.signing_key || t.signingKey, 
+workflow: "identity-verification",
+locale: "EN",
+        ...getIdentityConfig(isFull),
+        onComplete: showResult,
+        onError: showResult
+      });
+    } catch (e) { result.textContent = `// Runtime Error: ${e.message}`; }
+        ...getConfig(isFull),
+        onComplete: handleOutput,
+        onError: handleOutput
+      };
 
-const res=await fetch("/.netlify/functions/get-token")
+      console.log("Initializing SDK with:", sdkParams);
+      VidaSDK.init(sdkParams);
 
-if(!res.ok) throw new Error("Token fetch failed")
-
-return await res.json()
-
+    } catch (e) {
+      result.textContent = "// Error: " + e.message;
+    }
 }
 
-function handleOutput(data){
+  function startDocumentOnly() { initWorkflow("Document Capture", false); }
+  function startFullVerification() { initWorkflow("Full eKYC", true); }
+  function startDocumentOnly() { start(false); }
+  function startFullVerification() { start(true); }
 
-sdkContainer.style.display="none"
-
-const formatted=JSON.stringify(data,null,2)
-
-if(currentFlow==="doc"){
-
-document.getElementById("docResult").textContent=formatted
-
-}
-else{
-
-document.getElementById("identityResult").textContent=formatted
-
-}
-
-}
-
-function getConfig(isFull){
-
-const isMY=selectedCountry==="MY"
-
-return{
-
-countryCode:isMY?"MYS":"IDN",
-
-workflowConfigs:{
-identityVerification:{
-
-userConsent:{
-obtained:true,
-obtainedAt:Date.now()
-},
-
-docVerification:{
-skipDocSelectionScreen:false,
-skipIntroductionScreen:false
-},
-
-...(isFull?{faceMatch:{}}:{skipFaceMatch:true}),
-
-...(isMY?{documentType:["MyKad","MyPR","MyTentera","PASSPORT"]}:{})
-}
-
-}
-
-}
-
-}
-
-async function start(isFull){
-
-resetSDK()
-
-currentFlow=isFull?"identity":"doc"
-
-sdkContainer.style.display="block"
-backBtn.style.display="inline-block"
-
-try{
-
-const t=await fetchToken()
-
+async function startLivenessOnly() {
+result.style.display = "none";
+@@ -303,20 +274,19 @@ <h3>Developer Console</h3>
+const t = await fetchToken();
 VidaSDK.init({
-
-token:t.access_token,
-signingKey:t.signing_key||t.signingKey,
-workflow:"identity-verification",
-elementId:"sdk-container",
-locale:"EN",
-
-...getConfig(isFull),
-
-onComplete:handleOutput,
-onError:handleOutput
-
-})
-
+token: t.access_token,
+        signing_key: t.signing_key,
+        signingKey: t.signing_key || t.signingKey,
+workflow: "liveness",
+elementId: "sdk-container",
+locale: "EN",
+        onComplete: showResult,
+        onError: showResult
+        onComplete: handleOutput,
+        onError: handleOutput
+});
+    } catch (e) { 
+    } catch (e) {
+sdkContainer.style.display = "none";
+result.style.display = "block";
+      result.textContent = `// Liveness Error: ${e.message}`; 
+      result.textContent = "// Error: " + e.message;
 }
-
-catch(e){
-
-alert(e.message)
-
 }
-
-}
-
-function startDocumentOnly(){start(false)}
-
-function startFullVerification(){start(true)}
-
-async function startLivenessOnly(){
-
-resetSDK()
-
-currentFlow="identity"
-
-sdkContainer.style.display="block"
-backBtn.style.display="inline-block"
-
-try{
-
-const t=await fetchToken()
-
-VidaSDK.init({
-
-token:t.access_token,
-signingKey:t.signing_key||t.signingKey,
-workflow:"liveness",
-elementId:"sdk-container",
-locale:"EN",
-
-onComplete:handleOutput,
-onError:handleOutput
-
-})
-
-}
-
-catch(e){
-
-alert(e.message)
-
-}
-
-}
-
 </script>
 
 </body>
