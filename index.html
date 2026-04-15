@@ -1,228 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>VIDA eKYC Debug Portal</title>
-  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
+  <meta charset="UTF-8" />
+  <title>VIDA eKYC | Enterprise Demo Portal</title>
+  <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    body {
-      font-family: system-ui;
-      background: #f4f7f9;
-      margin: 0;
-      padding: 30px;
-    }
-
-    button {
-      margin: 5px;
-      padding: 10px 16px;
-      cursor: pointer;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: white;
-    }
-
-    #sdk-container {
-      height: 500px;
-      display: none;
-      background: black;
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
-
-    pre {
-      background: #011627;
-      color: #94a3b8;
-      padding: 16px;
-      border-radius: 8px;
-      min-height: 200px;
-      white-space: pre-wrap;
-    }
-  </style>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui;
+      background: #F4F7F9;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    #sdk-container {
+      height: 500px;
+      display: none;
+      background: black;
+      margin-bottom: 10px;
+    }
+    pre {
+      background: #011627;
+      color: #94A3B8;
+      padding: 16px;
+      border-radius: 8px;
+      min-height: 150px;
+    }
+  </style>
 </head>
 
 <body>
+<div class="container">
 
-<h2>VIDA eKYC Debug Console</h2>
+  <h3>VIDA SDK Test</h3>
 
-<button onclick="startDocumentOnly()">Document Only</button>
-<button onclick="startFullVerification()">Full Verification</button>
-<button onclick="startLivenessOnly()">Liveness</button>
+  <button onclick="startDocumentOnly()">Document Only</button>
+  <button onclick="startFullVerification()">Full Verification</button>
+  <button onclick="startLivenessOnly()">Liveness</button>
 
-<div id="sdk-container"></div>
-<pre id="result">// Ready</pre>
+  <div id="sdk-container"></div>
+  <pre id="result">// Ready</pre>
+
+</div>
 
 <script>
-  const result = document.getElementById("result");
-  const sdkContainer = document.getElementById("sdk-container");
+  const result = document.getElementById("result");
+  const sdkContainer = document.getElementById("sdk-container");
 
-  // =========================
-  // FETCH TOKEN
-  // =========================
-  async function fetchToken() {
-    const res = await fetch("/.netlify/functions/get-token");
-    return await res.json();
-  }
+  async function fetchToken() {
+    const res = await fetch("/.netlify/functions/get-token");
+    return await res.json();
+  }
 
-  // =========================
-  // FETCH FINAL RESULT (OCR + DOC)
-  // =========================
-  async function fetchFinalResult(transactionId) {
-    const res = await fetch("/api/verify/summary", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        transactionId: transactionId,
-        operations: ["idVerification", "ocr"]
-      })
-    });
+  // :white_check_mark: SUCCESS HANDLER
+  function handleComplete(data) {
+    sdkContainer.style.display = "none";
+    result.style.display = "block";
 
-    return await res.json();
-  }
-
-  // =========================
-  // SUCCESS HANDLER
-  // =========================
-  async function handleComplete(data) {
-    sdkContainer.style.display = "none";
-    result.style.display = "block";
-
-    const trxId = data.transactionId;
-
-    result.textContent =
-`⏳ SDK COMPLETED
------------------------
-Transaction ID: ${trxId}
-
-Fetching OCR + Doc Verification result...`;
-
-    try {
-      const finalResult = await fetchFinalResult(trxId);
-
-      result.textContent =
-`✅ FINAL RESULT (OCR + DOC VERIFICATION)
------------------------------------------
-${JSON.stringify(finalResult, null, 2)}`;
-
-    } catch (err) {
-      result.textContent =
-`❌ COMPLETED BUT FAILED TO FETCH RESULT
------------------------------------------
-Transaction ID: ${trxId}
-
-Error: ${err.message}`;
-    }
-  }
-
-  // =========================
-  // ERROR HANDLER
-  // =========================
-  function handleError(error) {
-    sdkContainer.style.display = "none";
-    result.style.display = "block";
-
-    const mainError = error?.errors?.[0];
-
-    result.textContent =
-`❌ VERIFICATION FAILED (onError)
+    result.textContent =
+`:white_check_mark: SUCCESS (onComplete)
 --------------------------------
-Reason: ${mainError?.message || "Unknown"}
-Code: ${mainError?.code || "-"}
+${JSON.stringify(data, null, 2)}`;
+  }
 
-Transaction ID: ${error.transactionId}
+  // :x: ERROR HANDLER
+  function handleError(error) {
+    sdkContainer.style.display = "none";
+    result.style.display = "block";
 
-Full Response:
+    result.textContent =
+`:x: ERROR (onError)
+--------------------------------
 ${JSON.stringify(error, null, 2)}`;
-  }
+  }
 
-  // =========================
-  // OPTIONAL: DOC SUCCESS (OCR EARLY)
-  // =========================
-  function handleDocSuccess(data) {
-    console.log("DOC SUCCESS:", data);
-  }
+  function getConfig(isFull) {
+    return {
+      countryCode: "IDN",
+      workflowConfigs: {
+        identityVerification: {
+          userConsent: {
+            obtained: true,
+            obtainedAt: Date.now()
+          },
+          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
+        }
+      }
+    };
+  }
 
-  // =========================
-  // CONFIG
-  // =========================
-  function getConfig(isFull) {
-    return {
-      countryCode: "IDN",
-      workflowConfigs: {
-        identityVerification: {
-          userConsent: {
-            obtained: true,
-            obtainedAt: Date.now()
-          },
-          ...(isFull ? { faceMatch: {} } : { skipFaceMatch: true })
-        }
-      }
-    };
-  }
+  async function start(isFull) {
+    result.textContent = "// Fetching token...";
+    try {
+      const t = await fetchToken();
 
-  // =========================
-  // START FUNCTION
-  // =========================
-  async function start(isFull) {
-    result.textContent = "// Fetching token...";
+      VidaSDK.init({
+        token: t.access_token,
+        signingKey: t.signing_key || t.signingKey,
+        workflow: "identity-verification",
+        locale: "EN",
+        ...getConfig(isFull),
 
-    try {
-      const t = await fetchToken();
+        // :white_check_mark: SEPARATED HANDLERS
+        onComplete: handleComplete,
+        onError: handleError
+      });
 
-      VidaSDK.init({
-        token: t.access_token,
-        signingKey: t.signing_key || t.signingKey,
-        workflow: "identity-verification",
-        locale: "EN",
-        ...getConfig(isFull),
+    } catch (e) {
+      handleError(e);
+    }
+  }
 
-        // ✅ KEY PART
-        onComplete: handleComplete,
-        onError: handleError,
-        onDocVerificationSuccess: handleDocSuccess
-      });
+  function startDocumentOnly() {
+    start(false);
+  }
 
-    } catch (e) {
-      handleError(e);
-    }
-  }
+  function startFullVerification() {
+    start(true);
+  }
 
-  function startDocumentOnly() {
-    start(false);
-  }
+  async function startLivenessOnly() {
+    result.style.display = "none";
+    sdkContainer.style.display = "block";
 
-  function startFullVerification() {
-    start(true);
-  }
+    try {
+      const t = await fetchToken();
 
-  // =========================
-  // LIVENESS FLOW
-  // =========================
-  async function startLivenessOnly() {
-    result.style.display = "none";
-    sdkContainer.style.display = "block";
+      VidaSDK.init({
+        token: t.access_token,
+        signingKey: t.signing_key || t.signingKey,
+        workflow: "liveness",
+        elementId: "sdk-container",
+        locale: "EN",
 
-    try {
-      const t = await fetchToken();
+        // :white_check_mark: SEPARATED HANDLERS
+        onComplete: handleComplete,
+        onError: handleError
+      });
 
-      VidaSDK.init({
-        token: t.access_token,
-        signingKey: t.signing_key || t.signingKey,
-        workflow: "liveness",
-        elementId: "sdk-container",
-        locale: "EN",
-
-        onComplete: handleComplete,
-        onError: handleError
-      });
-
-    } catch (e) {
-      handleError(e);
-    }
-  }
+    } catch (e) {
+      handleError(e);
+    }
+  }
 </script>
-
 </body>
 </html>
