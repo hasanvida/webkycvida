@@ -2,86 +2,151 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VIDA eKYC | Enterprise Demo Portal</title>
+  <title>VIDA eKYC Debug Portal</title>
   <script src="https://web-sdk.vida.id/1.1.0/sandbox/vida-web-sdk.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
-      margin: 0;
       font-family: system-ui;
       background: #f4f7f9;
+      margin: 0;
+      padding: 30px;
     }
-    .container {
-      max-width: 1000px;
-      margin: 40px auto;
-    }
+
     button {
       margin: 5px;
       padding: 10px 16px;
       cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: white;
     }
+
     #sdk-container {
       height: 500px;
       display: none;
       background: black;
+      margin-top: 10px;
       margin-bottom: 10px;
     }
+
     pre {
       background: #011627;
       color: #94a3b8;
       padding: 16px;
       border-radius: 8px;
-      min-height: 150px;
+      min-height: 200px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 
 <body>
-<div class="container">
 
-  <h3>VIDA SDK Test</h3>
+<h2>VIDA eKYC Debug Console</h2>
 
-  <button onclick="startDocumentOnly()">Document Only</button>
-  <button onclick="startFullVerification()">Full Verification</button>
-  <button onclick="startLivenessOnly()">Liveness</button>
+<button onclick="startDocumentOnly()">Document Only</button>
+<button onclick="startFullVerification()">Full Verification</button>
+<button onclick="startLivenessOnly()">Liveness</button>
 
-  <div id="sdk-container"></div>
-  <pre id="result">// Ready</pre>
-
-</div>
+<div id="sdk-container"></div>
+<pre id="result">// Ready</pre>
 
 <script>
   const result = document.getElementById("result");
   const sdkContainer = document.getElementById("sdk-container");
 
+  // =========================
+  // FETCH TOKEN
+  // =========================
   async function fetchToken() {
     const res = await fetch("/.netlify/functions/get-token");
     return await res.json();
   }
 
-  // ✅ SUCCESS HANDLER
-  function handleComplete(data) {
+  // =========================
+  // FETCH FINAL RESULT (OCR + DOC)
+  // =========================
+  async function fetchFinalResult(transactionId) {
+    const res = await fetch("/api/verify/summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        transactionId: transactionId,
+        operations: ["idVerification", "ocr"]
+      })
+    });
+
+    return await res.json();
+  }
+
+  // =========================
+  // SUCCESS HANDLER
+  // =========================
+  async function handleComplete(data) {
     sdkContainer.style.display = "none";
     result.style.display = "block";
 
+    const trxId = data.transactionId;
+
     result.textContent =
-`✅ SUCCESS (onComplete)
---------------------------------
-${JSON.stringify(data, null, 2)}`;
+`⏳ SDK COMPLETED
+-----------------------
+Transaction ID: ${trxId}
+
+Fetching OCR + Doc Verification result...`;
+
+    try {
+      const finalResult = await fetchFinalResult(trxId);
+
+      result.textContent =
+`✅ FINAL RESULT (OCR + DOC VERIFICATION)
+-----------------------------------------
+${JSON.stringify(finalResult, null, 2)}`;
+
+    } catch (err) {
+      result.textContent =
+`❌ COMPLETED BUT FAILED TO FETCH RESULT
+-----------------------------------------
+Transaction ID: ${trxId}
+
+Error: ${err.message}`;
+    }
   }
 
-  // ❌ ERROR HANDLER
+  // =========================
+  // ERROR HANDLER
+  // =========================
   function handleError(error) {
     sdkContainer.style.display = "none";
     result.style.display = "block";
 
+    const mainError = error?.errors?.[0];
+
     result.textContent =
-`❌ ERROR (onError)
+`❌ VERIFICATION FAILED (onError)
 --------------------------------
+Reason: ${mainError?.message || "Unknown"}
+Code: ${mainError?.code || "-"}
+
+Transaction ID: ${error.transactionId}
+
+Full Response:
 ${JSON.stringify(error, null, 2)}`;
   }
 
+  // =========================
+  // OPTIONAL: DOC SUCCESS (OCR EARLY)
+  // =========================
+  function handleDocSuccess(data) {
+    console.log("DOC SUCCESS:", data);
+  }
+
+  // =========================
+  // CONFIG
+  // =========================
   function getConfig(isFull) {
     return {
       countryCode: "IDN",
@@ -97,8 +162,12 @@ ${JSON.stringify(error, null, 2)}`;
     };
   }
 
+  // =========================
+  // START FUNCTION
+  // =========================
   async function start(isFull) {
     result.textContent = "// Fetching token...";
+
     try {
       const t = await fetchToken();
 
@@ -109,9 +178,10 @@ ${JSON.stringify(error, null, 2)}`;
         locale: "EN",
         ...getConfig(isFull),
 
-        // ✅ SEPARATED HANDLERS
+        // ✅ KEY PART
         onComplete: handleComplete,
-        onError: handleError
+        onError: handleError,
+        onDocVerificationSuccess: handleDocSuccess
       });
 
     } catch (e) {
@@ -127,6 +197,9 @@ ${JSON.stringify(error, null, 2)}`;
     start(true);
   }
 
+  // =========================
+  // LIVENESS FLOW
+  // =========================
   async function startLivenessOnly() {
     result.style.display = "none";
     sdkContainer.style.display = "block";
@@ -141,7 +214,6 @@ ${JSON.stringify(error, null, 2)}`;
         elementId: "sdk-container",
         locale: "EN",
 
-        // ✅ SEPARATED HANDLERS
         onComplete: handleComplete,
         onError: handleError
       });
@@ -151,5 +223,6 @@ ${JSON.stringify(error, null, 2)}`;
     }
   }
 </script>
+
 </body>
 </html>
