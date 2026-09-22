@@ -16,6 +16,7 @@ exports.handler = async function (event) {
   }
 
   try {
+    // Step 1: Get token
     log.push({ step: '2_token_start', url: 'https://qa-sso.vida.id/...' });
     const tokenRes = await fetch('https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token', {
       method: 'POST',
@@ -40,7 +41,8 @@ exports.handler = async function (event) {
       };
     }
 
-    const apiUrl = `https://qa-api.vida.id/api/v2/verify/status?verificationId=${encodeURIComponent(verificationId)}`;
+    // Step 2: Call KYC Status API
+    const apiUrl = `https://services-sandbox.vida.id/biometrics/api/v2/verify/status?verificationId=${encodeURIComponent(verificationId)}`;
     log.push({ step: '5_api_call', url: apiUrl });
 
     const res = await fetch(apiUrl, {
