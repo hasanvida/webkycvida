@@ -1,11 +1,11 @@
 // Netlify function: fraud-shield.js
-// Docs: GET /api/v1/evaluation/{clientTransactionId}
-// clientTransactionId = same as verificationId / groupId from SDK response
+// GET https://sandbox-device-fraud-service.np.vida.id/api/v1/evaluations?clientTransactionId={UUID}
+// Requires Bearer token auth.
 
 exports.handler = async function (event) {
-  const verificationId = event.queryStringParameters && event.queryStringParameters.verificationId;
+  const clientTransactionId = event.queryStringParameters && event.queryStringParameters.verificationId;
 
-  if (!verificationId) {
+  if (!clientTransactionId) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -19,20 +19,19 @@ exports.handler = async function (event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: process.env.VIDA_CLIENT_ID,
+        grant_type:    'client_credentials',
+        client_id:     process.env.VIDA_CLIENT_ID,
         client_secret: process.env.VIDA_CLIENT_SECRET,
-        scope: 'roles',
+        scope:         'roles',
       }),
     });
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) throw new Error('Token error: ' + JSON.stringify(tokenData));
 
-    // Fraud Shield API — clientTransactionId in the PATH (same as verificationId)
-    const res = await fetch(
-      `https://sandbox-device-fraud-service.np.vida.id/api/v1/evaluation/${encodeURIComponent(verificationId)}`,
-      { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }
-    );
+    const apiUrl = `https://sandbox-device-fraud-service.np.vida.id/api/v1/evaluations?clientTransactionId=${encodeURIComponent(clientTransactionId)}`;
+    const res = await fetch(apiUrl, {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
     const body = await res.text();
 
     return {
