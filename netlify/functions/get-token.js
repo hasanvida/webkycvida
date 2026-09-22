@@ -1,39 +1,49 @@
+// Netlify function: get-token.js
+// Fetches a VIDA SSO token server-side (SSO has CORS restrictions).
+// Returns access_token + signing_key so the browser can:
+//   1. Init the VIDA Web SDK  (needs both)
+//   2. Call VIDA APIs directly with Bearer auth  (needs access_token)
+
 exports.handler = async function () {
   try {
-    const response = await fetch("https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: process.env.VIDA_CLIENT_ID,
-        client_secret: process.env.VIDA_CLIENT_SECRET,
-        scope: "roles"
-      })
-    });
+    const tokenRes = await fetch(
+      'https://qa-sso.vida.id/auth/realms/vida/protocol/openid-connect/token',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type:    'client_credentials',
+          client_id:     process.env.VIDA_CLIENT_ID,
+          client_secret: process.env.VIDA_CLIENT_SECRET,
+          scope:         'roles',
+        }),
+      }
+    );
 
-    const data = await response.json();
+    const tokenData = await tokenRes.json();
 
-    if (!data.access_token) {
+    if (!tokenData.access_token) {
       return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Failed to obtain token", details: data })
+        statusCode: 502,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Token fetch failed', detail: tokenData }),
       };
     }
 
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
-        access_token: data.access_token,
-        signing_key: process.env.VIDA_SIGNING_KEY
-      })
+        access_token: tokenData.access_token,
+        signing_key:  tokenData.signing_key  || tokenData.signingKey  || null,
+        expires_in:   tokenData.expires_in   || null,
+      }),
     };
-
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message })
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
