@@ -1,5 +1,5 @@
 // Netlify function: transaction-detail.js
-// Docs: GET /api/v2/transaction?transactionId=UUID
+// Docs: GET /biometrics/api/v2/transaction?transactionId={UUID}
 
 exports.handler = async function (event) {
   const log = [];
@@ -40,8 +40,8 @@ exports.handler = async function (event) {
       };
     }
 
-    // Transaction Details API — /api/v2/transaction?transactionId=UUID
-    const apiUrl = `https://qa-api.vida.id/api/v2/transaction?transactionId=${encodeURIComponent(transactionId)}`;
+    // Transaction Details API — /biometrics/api/v2/transaction?transactionId={UUID}
+    const apiUrl = `https://services-sandbox.vida.id/biometrics/api/v2/transaction?transactionId=${encodeURIComponent(transactionId)}`;
     log.push({ step: '5_api_call', url: apiUrl });
 
     const res = await fetch(apiUrl, {
