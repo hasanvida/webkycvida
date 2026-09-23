@@ -3,7 +3,6 @@
 // Returns access_token + signing_key so the browser can:
 //   1. Init the VIDA Web SDK  (needs both)
 //   2. Call VIDA APIs directly with Bearer auth  (needs access_token)
-// Note: signing_key is a static partner credential (not in the SSO response).
 
 exports.handler = async function () {
   try {
@@ -35,9 +34,10 @@ exports.handler = async function () {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
-        access_token: tokenData.access_token,
-        signing_key:  process.env.VIDA_SIGNING_KEY || null,
-        expires_in:   tokenData.expires_in || null,
+        access_token:           tokenData.access_token,
+        signing_key:            process.env.VIDA_SIGNING_KEY || null,
+        fraud_shield_client_id: process.env.VIDA_FRAUD_SHIELD_CLIENT_ID || null,
+        expires_in:             tokenData.expires_in || null,
       }),
     };
   } catch (error) {
