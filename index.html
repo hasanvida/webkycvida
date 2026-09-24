@@ -696,8 +696,10 @@ function getSDKConfig(flowType) {
   // documentType at identityVerification level (per docs)
   if (doctype) identityVerification.documentType = doctype;
 
-  // faceMatch only for full/liveness flows
-  if (flowType !== 'doc') {
+  if (flowType === 'doc') {
+    // Document-only: explicitly skip face match and liveness
+    identityVerification.skipFaceMatch = true;
+  } else {
     identityVerification.faceMatch = {
       skipTutorialScreen: skipTut,
       maxRetryAttempts: retry,
@@ -801,21 +803,13 @@ function handleComplete(data) {
     document.getElementById('api-doc-transaction-id').value = docTransactionId;
   }
 
-  // Auto-fill liveness transactionId — search all likely SDK response paths
+  // Auto-fill liveness transactionId — only from known liveness fields in SDK response
   const livenessTransactionId =
     lv.transactionId ||
     lv.transaction_id ||
     lv.livenessTransactionId ||
     data.livenessTransactionId ||
-    // from operations.livenessVerification (seen in KYC Status API response shape)
-    (ops.livenessVerification && (ops.livenessVerification.transactionId || (ops.livenessVerification.latestExecution && ops.livenessVerification.latestExecution.transactionId))) ||
-    fm.transactionId ||
-    // Deep search: find any key named transactionId in top-level nested objects (exclude doc)
-    Object.values(data).reduce((found, val) => {
-      if (found) return found;
-      if (val && typeof val === 'object' && val !== doc) return val.transactionId || val.transaction_id || null;
-      return null;
-    }, null);
+    null;
 
   if (livenessTransactionId) {
     document.getElementById('api-evaluation-id').value = livenessTransactionId;
@@ -919,6 +913,20 @@ async function callAPI(type) {
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
     pre.textContent = JSON.stringify(data, null, 2);
+
+    // After a successful KYC Status call, auto-extract doc + liveness transactionIds
+    if (type === 'kyc-status' && res.ok && data.operations) {
+      const ops = data.operations;
+      const docOp = ops.docVerification || ops.documentVerification || ops.idVerification || {};
+      const docTxnId = (docOp.latestExecution && docOp.latestExecution.transactionId) || docOp.transactionId || null;
+      if (docTxnId) {
+        document.getElementById('api-doc-transaction-id').value = docTxnId;
+        showToast('✓ Doc transactionId auto-filled from KYC Status', 'var(--mint)');
+      }
+      const lvOp = ops.livenessVerification || ops.liveness || {};
+      const lvTxnId = (lvOp.latestExecution && lvOp.latestExecution.transactionId) || lvOp.transactionId || null;
+      if (lvTxnId) { document.getElementById('api-evaluation-id').value = lvTxnId; }
+    }
     const ok = res.ok && !data.error && !data.message?.toLowerCase().includes('error');
     pill.textContent  = ok ? `${res.status} OK` : `${res.status} Error`;
     pill.style.background = ok ? '#D1FAE5' : '#FEE2E2';
