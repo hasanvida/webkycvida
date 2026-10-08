@@ -1,11 +1,11 @@
 // Netlify function: doc-verification.js
-// GET https://My-services-sandbox.np.vida.id/api/v2/verify/transaction?transactionId={UUID}&includeDocuments={true|false}
+// GET https://My-services-sandbox.np.vida.id/api/v2/verify/transaction?transactionId={UUID}&includeDocuments=true
 // Uses the document verification transactionId from the KYC flow.
 
 exports.handler = async function (event) {
   const params = event.queryStringParameters || {};
   const transactionId = params.transactionId;
-  const includeDocuments = params.includeDocuments === 'true';
+  const includeDocuments = true; // hardcoded
 
   const headers = {
     'Content-Type': 'application/json',
