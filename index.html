@@ -554,6 +554,10 @@
           <span>Skip liveness tutorial screen <span style="color:var(--muted);font-size:12px;">(Full / Liveness flows)</span></span>
           <label class="toggle"><input type="checkbox" id="cfg-skip-tutorial" /><span class="slider"></span></label>
         </div>
+        <div class="toggle-item">
+          <span>Skip face match <span style="color:var(--muted);font-size:12px;">(Full flow only — skips liveness &amp; selfie, document capture only)</span></span>
+          <label class="toggle"><input type="checkbox" id="cfg-skip-facematch" /><span class="slider"></span></label>
+        </div>
       </div>
     </div>
   </div>
@@ -687,12 +691,13 @@ function showToast(msg, color) {
 //                            docVerification { skipIntroductionScreen, maxRetryAttempts }, faceMatch { skipTutorialScreen, maxRetryAttempts } }
 //   liveness              → workflowConfigs.liveness { skipTutorialScreen, maxRetryAttempts }
 function getSDKConfig(flowType) {
-  const country   = document.getElementById('cfg-country').value;
-  const locale    = document.getElementById('cfg-locale').value.toUpperCase();
-  const retry     = parseInt(document.getElementById('cfg-retry').value, 10);
-  const consent   = document.getElementById('cfg-consent').checked;
-  const skipIntro = document.getElementById('cfg-skip-intro').checked;
-  const skipTut   = document.getElementById('cfg-skip-tutorial').checked;
+  const country        = document.getElementById('cfg-country').value;
+  const locale         = document.getElementById('cfg-locale').value.toUpperCase();
+  const retry          = parseInt(document.getElementById('cfg-retry').value, 10);
+  const consent        = document.getElementById('cfg-consent').checked;
+  const skipIntro      = document.getElementById('cfg-skip-intro').checked;
+  const skipTut        = document.getElementById('cfg-skip-tutorial').checked;
+  const skipFaceMatch  = document.getElementById('cfg-skip-facematch').checked;
 
   // Liveness-only workflow reads its options from workflowConfigs.liveness,
   // NOT from identityVerification (that's why retry/tutorial were ignored before).
@@ -721,13 +726,18 @@ function getSDKConfig(flowType) {
   if (consent) identityVerification.userConsent = { obtained: true, obtainedAt: Date.now() };
 
   if (flowType === 'doc') {
-    // Document-only: skip face match (and its liveness)
+    // Document-only flow: always skip face match (and its liveness)
     identityVerification.skipFaceMatch = true;
   } else {
-    identityVerification.faceMatch = {
-      skipTutorialScreen: skipTut,
-      maxRetryAttempts: retry,   // retries of the Liveness + Face Match API call (default 3)
-    };
+    // Full flow: respect the Skip Face Match toggle
+    if (skipFaceMatch) {
+      identityVerification.skipFaceMatch = true;
+    } else {
+      identityVerification.faceMatch = {
+        skipTutorialScreen: skipTut,
+        maxRetryAttempts: retry,   // retries of the Liveness + Face Match API call (default 3)
+      };
+    }
   }
 
   return {
@@ -740,14 +750,8 @@ function getSDKConfig(flowType) {
 // ─── Token fetch ──────────────────────────────────────────────────
 async function fetchToken() {
   const res = await fetch('/.netlify/functions/get-token');
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); }
-  catch { throw new Error(`get-token did not return JSON (HTTP ${res.status}). Is the page served by Netlify with the function deployed?`); }
-  if (!res.ok || !data.access_token) {
-    throw new Error(`Failed to get token (HTTP ${res.status}): ${data.error || data.message || 'no access_token in response'}`);
-  }
-  if (!(data.signing_key || data.signingKey)) throw new Error('get-token returned no signing key');
+  const data = await res.json();
+  if (!data.access_token) throw new Error('Failed to get token');
   return data;
 }
 
@@ -803,10 +807,6 @@ async function startFlow(flowType) {
     if (userId) initParams.userInfo = { id: userId };
 
     hideSDKToast();
-    // A previous session may still be mounted: clean it up before starting again.
-    if (typeof VidaSDK.destroy === 'function') {
-      try { VidaSDK.destroy(); } catch (_) { /* nothing to destroy */ }
-    }
     VidaSDK.init(initParams);
 
   } catch (e) {
@@ -858,9 +858,6 @@ function handleComplete(data) {
 }
 
 function handleError(err) {
-  // A thrown Error serialises to {} — keep its message visible.
-  if (err instanceof Error) err = { message: err.message };
-  console.warn('[VIDA SDK error]', err);
   lastResult = err;
   renderResult(err, false);
   showToast('✕ Verification failed', 'var(--red)');
@@ -954,14 +951,14 @@ async function callAPI(type) {
     // After a successful KYC Status call, auto-extract doc + liveness transactionIds
     if (type === 'kyc-status' && res.ok && data.operations) {
       const ops = data.operations;
-      const docTxnId =
-        ops.ocr?.front?.latestExecution?.transactionId ||
-        ops.idVerification?.front?.latestExecution?.transactionId || null;
+      const docOp = ops.docVerification || ops.documentVerification || ops.idVerification || {};
+      const docTxnId = (docOp.latestExecution && docOp.latestExecution.transactionId) || docOp.transactionId || null;
       if (docTxnId) {
         document.getElementById('api-doc-transaction-id').value = docTxnId;
         showToast('✓ Doc transactionId auto-filled from KYC Status', 'var(--mint)');
       }
-      const lvTxnId = ops.livenessVerification?.result?.latestExecution?.transactionId || null;
+      const lvOp = ops.livenessVerification || ops.liveness || {};
+      const lvTxnId = (lvOp.latestExecution && lvOp.latestExecution.transactionId) || lvOp.transactionId || null;
       if (lvTxnId) { document.getElementById('api-evaluation-id').value = lvTxnId; }
     }
     const ok = res.ok && !data.error && !data.message?.toLowerCase().includes('error');
